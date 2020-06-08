@@ -13,7 +13,7 @@ set(PUBLIC_DOCS
 )
 
 set(SOURCES
-    main.cpp
+    src/main.cpp
     include/openimu300.h
     ${SAMPLE_PLUGINS_COMMON_DIR}/ByteQueue.hpp
     ${SAMPLE_PLUGINS_COMMON_DIR}/BufferPool.hpp
