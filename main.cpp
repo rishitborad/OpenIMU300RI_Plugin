@@ -165,28 +165,34 @@ public:
 
     dwStatus startSensor()
     {
+        dwStatus status;
         if (!isVirtualSensor())
-            return dwSensor_start(m_canSensor);
-
-        #if 0
-        uint8_t payload[2] = {128,50};
-        std::cout << "PACKET RATE\r\n";
-
-
-        if(imuParams.packetRate == 100)
         {
-          dwCANMessage sendPacketRate;
-          sendPacketRate.id           = 0x18FF5500;
-          sendPacketRate.size         = 2;
-          sendPacketRate.timestamp_us = 0;
-          //sendPacketRate.data = payload;
-          memcpy(sendPacketRate.data, payload, sendPacketRate.size);
+          status = dwSensor_start(m_canSensor);
 
-          dwStatus status = dwSensorCAN_sendMessage(&sendPacketRate, 100000, m_canSensor);
+          // Configure Sensor
+          if(status == DW_SUCCESS)
+          {
+            uint8_t payload[2] = {128,50};
+            std::cout << "PACKET RATE\r\n";
+            if(imuParams.packetRate != 0)
+            {
+              dwCANMessage sendPacketRate;
+              sendPacketRate.id           = 0x18FF5500;
+              sendPacketRate.size         = 2;
+              sendPacketRate.timestamp_us = 0;
+              //sendPacketRate.data = payload;
+              memcpy(sendPacketRate.data, payload, sendPacketRate.size);
 
-          std::cout << status <<"PACKET RATE SENT\r\n";
+              dwStatus status = dwSensorCAN_sendMessage(&sendPacketRate, 100000, m_canSensor);
+
+              std::cout << status <<"PACKET RATE SENT\r\n";
+            }
+          }
+          else{
+              return status;
+          }
         }
-        #endif
         return DW_SUCCESS;
     }
 
@@ -331,6 +337,29 @@ private:
         return m_virtualSensorFlag;
     }
 
+#if 0
+    void setupIMU()
+    {
+      for(unsigned int i = 0; i < IMU_PARAMS_t::MAX_IMU_PARAMS; i++)
+      {
+        switch(static_cast<IMU_PARAMS_t>(i))
+        {
+          case IMU_PARAMS_t::PACKET_TYPE:
+            if(imuParams.packetType != defaultParams.packetType){
+
+            }
+            params->packetType  = val;
+            break;
+          case IMU_PARAMS_t::PACKET_RATE: params->packetRate  = val;  break;
+          case IMU_PARAMS_t::ORIENTATION: params->orientation = val;  break;
+          case IMU_PARAMS_t::RATE_LPF:    params->rateLPF     = val;  break;
+          case IMU_PARAMS_t::ACCEL_LPF:   params->accelLPF    = val;  break;
+          default:
+            break;
+        }
+      }
+    }
+  #endif
     dwContextHandle_t m_ctx      = nullptr;
     dwSALHandle_t m_sal          = nullptr;
     dwSensorHandle_t m_canSensor = nullptr;

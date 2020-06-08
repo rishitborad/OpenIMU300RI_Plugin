@@ -27,6 +27,7 @@ typedef enum {
   ORIENTATION = 2,
   RATE_LPF = 3,
   ACCEL_LPF = 4,
+  MAX_IMU_PARAMS = 5
 }IMU_PARAMS_t;
 
 typedef struct{
