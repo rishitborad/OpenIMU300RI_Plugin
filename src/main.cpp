@@ -35,6 +35,7 @@
 #include <iostream>
 #include <openimu300.h>
 #include <imu_messaging.h>
+#include <map>
 
 namespace dw
 {
@@ -43,7 +44,9 @@ namespace plugins
 namespace imu
 {
 
-  static OpenIMU300 instance;
+#define SRC_ADDRESS       (0x00)
+#define DEST_ADDRESS      (0x80)
+static OpenIMU300 instance(SRC_ADDRESS, DEST_ADDRESS);
 
 // Structure defining sample CAN acceleration
 typedef struct
@@ -64,7 +67,7 @@ const uint32_t SAMPLE_CAN_REPORT_ACCEL = 0x06B;
 const uint32_t SAMPLE_CAN_REPORT_GYRO  = 0x06C;
 const uint32_t OPENIMU_AR  = 0x0CF02A80;
 const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
-#if 0
+#if 1
 static bool getParameterVal(std::string paramsString, std::string searchString, uint16_t* value)
 {
   std::string param;
@@ -87,20 +90,20 @@ static bool getParameterVal(std::string paramsString, std::string searchString, 
   return false;
 }
 
-static void initParams(std::string paramsString, imuParameters_t *params)
+static void getParams(std::string paramsString, imuParameters_t *params, map<IMU_PARAM_NAME_t, uint16_t> &paramMap)
 {
   for(unsigned int i = 0; i < paramNames.size(); i++)
   {
     uint16_t val = 0;
     if(getParameterVal(paramsString, paramNames[i], &val))
     {
-      switch(static_cast<IMU_PARAMS_t>(i))
+      switch(static_cast<IMU_PARAM_NAME_t>(i))
       {
-        case IMU_PARAMS_t::PACKET_TYPE: params->packetType  = val;  break;
-        case IMU_PARAMS_t::PACKET_RATE: params->packetRate  = val;  break;
-        case IMU_PARAMS_t::ORIENTATION: params->orientation = val;  break;
-        case IMU_PARAMS_t::RATE_LPF:    params->rateLPF     = val;  break;
-        case IMU_PARAMS_t::ACCEL_LPF:   params->accelLPF    = val;  break;
+        case IMU_PARAM_NAME_t::paramPACKET_RATE: params->packetRate  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_RATE] = val; break;
+        case IMU_PARAM_NAME_t::paramPACKET_TYPE: params->packetType  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_TYPE] = val;  break;
+        case IMU_PARAM_NAME_t::paramORIENTATION: params->orientation = val; paramMap[IMU_PARAM_NAME_t::paramORIENTATION] = val; break;
+        case IMU_PARAM_NAME_t::paramRATE_LPF:    params->rateLPF     = val; paramMap[IMU_PARAM_NAME_t::paramRATE_LPF] = val; break;
+        case IMU_PARAM_NAME_t::paramACCEL_LPF:   params->accelLPF    = val; paramMap[IMU_PARAM_NAME_t::paramACCEL_LPF] = val; break;
         default:
           break;
       }
@@ -118,7 +121,7 @@ public:
         , m_virtualSensorFlag(true)
         , m_buffer(sizeof(dwCANMessage))
         , m_slot(slotSize)
-        //, imuParams(defaultParams)
+        , imuParams(defaultParams)
         , imu300(&instance)
     {
     }
@@ -160,9 +163,15 @@ public:
         imu300->init();
 
         // Setup IMU parameters
-        //initParams(paramsString, &imuParams);
+        getParams(paramsString, &imuParams, paramMap);
+
+        for(auto i = paramMap.begin(); i != paramMap.end(); i++)
+        {
+          printf("param[%d] = %d\r\n", i->first, i->second);
+        }
 
         //std::cout<<"PARAM LIST: "<<imuParams.packetRate<<","<<imuParams.packetType<<","<<imuParams.orientation<<","<<imuParams.rateLPF<<","<<imuParams.accelLPF<<"\r\n";
+
 
         return DW_SUCCESS;
     }
@@ -173,33 +182,16 @@ public:
         if (!isVirtualSensor())
         {
           status = dwSensor_start(m_canSensor);
-
-          std::cout << "PACKET RATE\r\n";
-          imu300->isValidMessage(0);
           // Configure Sensor
-          if(status == DW_SUCCESS)
+          if(status != DW_SUCCESS)
+            return status;
+
+          for(auto i = paramMap.begin(); i != paramMap.end(); i++)
           {
-          #if 0
-            uint8_t payload[2] = {128,50};
-            std::cout << "PACKET RATE\r\n";
-
-            if(imuParams.packetRate != 0)
-            {
-              dwCANMessage sendPacketRate;
-              sendPacketRate.id           = 0x18FF5500;
-              sendPacketRate.size         = 2;
-              sendPacketRate.timestamp_us = 0;
-              //sendPacketRate.data = payload;
-              memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-
-              dwStatus status = dwSensorCAN_sendMessage(&sendPacketRate, 100000, m_canSensor);
-
-              std::cout << status <<"PACKET RATE SENT\r\n";
-            }
-          #endif
-          }
-          else{
-              return status;
+            dwCANMessage packet;
+            imu300->getConfigPacket(i->first, i->second, &packet);
+            printf("PAYLOAD: %X %X %X \r\n",packet.id, packet.data[0], packet.data[1]);
+            //dwStatus status = dwSensorCAN_sendMessage(&packet, 100000, m_canSensor);
           }
         }
         return DW_SUCCESS;
@@ -354,11 +346,11 @@ private:
     void setupIMU()
     {
       dwCANMessage sendPacketRate;
-      for(unsigned int i = 0; i < IMU_PARAMS_t::MAX_IMU_PARAMS; i++)
+      for(unsigned int i = 0; i < IMU_PARAM_NAME_t::MAX_IMU_PARAMS; i++)
       {
-        switch(static_cast<IMU_PARAMS_t>(i))
+        switch(static_cast<IMU_PARAM_NAME_t>(i))
         {
-          case IMU_PARAMS_t::PACKET_TYPE:
+          case IMU_PARAM_NAME_t::PACKET_TYPE:
             if(imuParams.packetType != defaultParams.packetType)
             {
                 uint8_t payload[2] = {128,0};
@@ -370,7 +362,7 @@ private:
                 memcpy(sendPacketRate.data, payload, sendPacketRate.size);
             }
             break;
-          case IMU_PARAMS_t::PACKET_RATE:
+          case IMU_PARAM_NAME_t::PACKET_RATE:
             if(imuParams.packetRate!= defaultParams.packetRate)
             {
                 uint8_t payload[2] = {128,0};
@@ -382,7 +374,7 @@ private:
                 memcpy(sendPacketRate.data, payload, sendPacketRate.size);
             }
             break;
-          case IMU_PARAMS_t::ORIENTATION:
+          case IMU_PARAM_NAME_t::ORIENTATION:
             if(imuParams.orientation != defaultParams.orientation)
             {
                 uint8_t payload[2] = {128,0};
@@ -394,7 +386,7 @@ private:
                 memcpy(sendPacketRate.data, payload, sendPacketRate.size);
             }
             break;
-          case IMU_PARAMS_t::RATE_LPF:
+          case IMU_PARAM_NAME_t::RATE_LPF:
             if(imuParams.rateLPF != defaultParams.rateLPF)
             {
                 uint8_t payload[2] = {128,0};
@@ -406,7 +398,7 @@ private:
                 memcpy(sendPacketRate.data, payload, sendPacketRate.size);
             }
             break;
-          case IMU_PARAMS_t::ACCEL_LPF:
+          case IMU_PARAM_NAME_t::ACCEL_LPF:
             if(imuParams.accelLPF != defaultParams.accelLPF)
             {
                 uint8_t payload[2] = {128,0};
@@ -424,7 +416,7 @@ private:
         dwStatus status = dwSensorCAN_sendMessage(&sendPacketRate, 100000, m_canSensor);
       }
     }
-  #endif
+#endif
     dwContextHandle_t m_ctx      = nullptr;
     dwSALHandle_t m_sal          = nullptr;
     dwSensorHandle_t m_canSensor = nullptr;
@@ -433,9 +425,9 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    //imuParameters_t imuParams;
-
-    IMUMessaging *imu300;
+    imuParameters_t                 imuParams;  // Parameter struct for the IMU, default set by constructor
+    IMUMessaging                    *imu300;    // Pointer to IMU abstract class
+    map<IMU_PARAM_NAME_t, uint16_t> paramMap;   // Contrains only non default parameter and value pair
 
 };
 } // namespace imu

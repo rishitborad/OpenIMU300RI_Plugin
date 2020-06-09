@@ -20,16 +20,9 @@ typedef struct {
     uint8_t  rsvd                 :       2;        // rsvd
     uint8_t  measurement_latency;                   // latency
 } angularRate;
-/*
-typedef enum {
-  PACKET_TYPE = 0,
-  PACKET_RATE = 1,
-  ORIENTATION = 2,
-  RATE_LPF = 3,
-  ACCEL_LPF = 4,
-  MAX_IMU_PARAMS = 5
-}IMU_PARAMS_t;
-*/
+
+
+
 typedef struct{
   uint16_t packetRate;
   uint16_t packetType;
