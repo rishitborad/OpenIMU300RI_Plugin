@@ -67,7 +67,8 @@ const uint32_t SAMPLE_CAN_REPORT_ACCEL = 0x06B;
 const uint32_t SAMPLE_CAN_REPORT_GYRO  = 0x06C;
 const uint32_t OPENIMU_AR  = 0x0CF02A80;
 const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
-#if 1
+
+
 static bool getParameterVal(std::string paramsString, std::string searchString, uint16_t* value)
 {
   std::string param;
@@ -110,7 +111,8 @@ static void getParams(std::string paramsString, imuParameters_t *params, map<IMU
     }
   }
 }
-#endif
+
+
 class SampleIMUSensor
 {
 public:
@@ -170,9 +172,6 @@ public:
           printf("param[%d] = %d\r\n", i->first, i->second);
         }
 
-        //std::cout<<"PARAM LIST: "<<imuParams.packetRate<<","<<imuParams.packetType<<","<<imuParams.orientation<<","<<imuParams.rateLPF<<","<<imuParams.accelLPF<<"\r\n";
-
-
         return DW_SUCCESS;
     }
 
@@ -190,8 +189,10 @@ public:
           {
             dwCANMessage packet;
             imu300->getConfigPacket(i->first, i->second, &packet);
-            printf("PAYLOAD: %X %X %X \r\n",packet.id, packet.data[0], packet.data[1]);
-            //dwStatus status = dwSensorCAN_sendMessage(&packet, 100000, m_canSensor);
+            printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
+
+            if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
+              return status;
           }
         }
         return DW_SUCCESS;
@@ -239,11 +240,14 @@ public:
             {
               break;
             }
+
+            /*
             // Filter invalid messages
             if (result->id == SAMPLE_CAN_REPORT_ACCEL || result->id == SAMPLE_CAN_REPORT_GYRO || result->id == OPENIMU_AR)
             {
                 break;
             }
+            */
         }
 
         *data = reinterpret_cast<uint8_t*>(result);
@@ -342,81 +346,6 @@ private:
         return m_virtualSensorFlag;
     }
 
-#if 0
-    void setupIMU()
-    {
-      dwCANMessage sendPacketRate;
-      for(unsigned int i = 0; i < IMU_PARAM_NAME_t::MAX_IMU_PARAMS; i++)
-      {
-        switch(static_cast<IMU_PARAM_NAME_t>(i))
-        {
-          case IMU_PARAM_NAME_t::PACKET_TYPE:
-            if(imuParams.packetType != defaultParams.packetType)
-            {
-                uint8_t payload[2] = {128,0};
-                payload[1] = static_cast<uint8_t>(imuParams.packetType);
-                sendPacketRate.id           = 0x18FF5500;
-                sendPacketRate.size         = 2;
-                sendPacketRate.timestamp_us = 0;
-                //sendPacketRate.data = payload;
-                memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-            }
-            break;
-          case IMU_PARAM_NAME_t::PACKET_RATE:
-            if(imuParams.packetRate!= defaultParams.packetRate)
-            {
-                uint8_t payload[2] = {128,0};
-                payload[1] = static_cast<uint8_t>(imuParams.packetType);
-                sendPacketRate.id           = 0x18FF5500;
-                sendPacketRate.size         = 2;
-                sendPacketRate.timestamp_us = 0;
-                //sendPacketRate.data = payload;
-                memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-            }
-            break;
-          case IMU_PARAM_NAME_t::ORIENTATION:
-            if(imuParams.orientation != defaultParams.orientation)
-            {
-                uint8_t payload[2] = {128,0};
-                payload[1] = static_cast<uint8_t>(imuParams.packetType);
-                sendPacketRate.id           = 0x18FF5500;
-                sendPacketRate.size         = 2;
-                sendPacketRate.timestamp_us = 0;
-                //sendPacketRate.data = payload;
-                memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-            }
-            break;
-          case IMU_PARAM_NAME_t::RATE_LPF:
-            if(imuParams.rateLPF != defaultParams.rateLPF)
-            {
-                uint8_t payload[2] = {128,0};
-                payload[1] = static_cast<uint8_t>(imuParams.packetType);
-                sendPacketRate.id           = 0x18FF5500;
-                sendPacketRate.size         = 2;
-                sendPacketRate.timestamp_us = 0;
-                //sendPacketRate.data = payload;
-                memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-            }
-            break;
-          case IMU_PARAM_NAME_t::ACCEL_LPF:
-            if(imuParams.accelLPF != defaultParams.accelLPF)
-            {
-                uint8_t payload[2] = {128,0};
-                payload[1] = static_cast<uint8_t>(imuParams.packetType);
-                sendPacketRate.id           = 0x18FF5500;
-                sendPacketRate.size         = 2;
-                sendPacketRate.timestamp_us = 0;
-                //sendPacketRate.data = payload;
-                memcpy(sendPacketRate.data, payload, sendPacketRate.size);
-            }
-            break;
-          default:
-            break;
-        }
-        dwStatus status = dwSensorCAN_sendMessage(&sendPacketRate, 100000, m_canSensor);
-      }
-    }
-#endif
     dwContextHandle_t m_ctx      = nullptr;
     dwSALHandle_t m_sal          = nullptr;
     dwSensorHandle_t m_canSensor = nullptr;

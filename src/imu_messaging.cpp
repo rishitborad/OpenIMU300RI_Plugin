@@ -1,6 +1,10 @@
 #include <imu_messaging.h>
 
 
+// Release Notes:
+// 1. Only supports Decimal parameter values
+// 2.
+
 static vector<pgn> IMU300pgnList =  {
                      {.type = REQUEST_PACKET,         .PF = 234, .PS = 255}   //GET_PACKET
                     ,{.type = REQUEST_PACKET,         .PF = 253, .PS = 197}   //ECU_ID
@@ -87,7 +91,7 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
   if(vec_itr == map_itr->second.end())
     return false;
 
-  printf("Valid: %d %d\r\n", PF, PS);
+  //printf("Valid: %d %d\r\n", PF, PS);
   return true;
 }
 
@@ -122,7 +126,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
-          packet->size = 2;
+          packet->size = 3;
           packet->timestamp_us = 0;
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>(paramVal & 0xFF);
@@ -139,7 +143,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
-          packet->size = 2;
+          packet->size = 3;
           packet->timestamp_us = 0;
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>((paramVal & 0xFF00) >> 8);   // Orientation MSB
@@ -156,7 +160,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
-          packet->size = 2;
+          packet->size = 3;
           packet->timestamp_us = 0;
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>(paramVal);   // Rate LPF byte
@@ -173,7 +177,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
-          packet->size = 2;
+          packet->size = 3;
           packet->timestamp_us = 0;
           packet->data[0] = this->ECUAddress;
           packet->data[1] = 0;                                // Rate LPF byte
