@@ -1,6 +1,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 struct pgn{
@@ -9,6 +10,12 @@ struct pgn{
   pgn(){PF = 0; PS = 0;}
   pgn(uint8_t pf, uint8_t ps): PF(pf), PS(ps){}
 };
+
+typedef enum{
+  REQUEST_PACKET,
+  CONFIGURATION_PACKET,
+  DATA_PACKET,
+}PACKET_TYPE_t;
 
 typedef enum{
   GET_PACKET          = 0,
@@ -31,12 +38,13 @@ typedef enum{
   MAX_PGN             = 17,
 }imuMessages;
 
-
+// TODO: Change this class name to Aceinna IMU
 class IMUMessaging{
 public:
   //IMUMessaging();
   virtual ~IMUMessaging(){};
-  virtual bool isValidMessage(uint32_t message_id) = 0;
+  virtual void init() = 0;
+  virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) = 0;
   virtual void parser() = 0;
   virtual void createPacket() = 0;
 private:
@@ -48,9 +56,12 @@ class OpenIMU300 : public IMUMessaging
 public:
   OpenIMU300();
   virtual ~OpenIMU300() override;
-  virtual bool isValidMessage(uint32_t message_id) override;
+  virtual void init() override;
+  virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) override;
   virtual void parser() override;
   virtual void createPacket() override;
 private:
-  map<uint8_t,vector<uint8_t>> messagePGN;
+
+  //map<PF,Vector<PS,PS,PS>>
+  map<uint8_t,vector<uint8_t>> PGN_list;
 };

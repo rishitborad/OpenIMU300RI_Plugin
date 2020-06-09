@@ -157,6 +157,8 @@ public:
             return DW_FAILURE;
         }
 
+        imu300->init();
+
         // Setup IMU parameters
         //initParams(paramsString, &imuParams);
 
@@ -241,6 +243,10 @@ public:
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
         {
+            if(imu300->isValidMessage(result->id))
+            {
+              break;
+            }
             // Filter invalid messages
             if (result->id == SAMPLE_CAN_REPORT_ACCEL || result->id == SAMPLE_CAN_REPORT_GYRO || result->id == OPENIMU_AR)
             {
