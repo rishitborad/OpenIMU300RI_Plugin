@@ -63,14 +63,6 @@ typedef struct
     int16_t gyroYaw;
 } SampleCANReportGyro;
 
-const uint32_t SAMPLE_CAN_REPORT_ACCEL = 0x06B;
-const uint32_t SAMPLE_CAN_REPORT_GYRO  = 0x06C;
-const uint32_t OPENIMU_AR   = 0x0CF02A80;
-const uint32_t OPENIMU_ACC  = 0x08F02D80;
-const uint32_t OPENIMU_SSI  = 0x0CF02980;
-const uint32_t OPENIMU_MAG  = 0x0CFD6A80;
-const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
-
 class SampleIMUSensor
 {
 public:
@@ -255,83 +247,12 @@ public:
         *frame              = {};
         frame->timestamp_us = (*reference).timestamp_us;
 
-
         if(!imu300->parseDataPacket(*reference, frame))
         {
           m_buffer.dequeue();
           return DW_FAILURE;
         }
-        /*
-        switch ((*reference).id)
-        {
-          case SAMPLE_CAN_REPORT_ACCEL:
-          {
-              auto ptr = reinterpret_cast<const SampleCANReportAccel*>((*reference).data);
-              // All fields have range: -327.68 to 327.67, LSB: 0.01 m/s^2, thus
-              // multiply by 0.01f to convert to m/s^2
-              frame->acceleration[0] = static_cast<float32_t>(ptr->accelLong) * 0.01f;
-              frame->acceleration[1] = static_cast<float32_t>(ptr->accelLat) * 0.01f;
-              frame->acceleration[2] = static_cast<float32_t>(ptr->accelVert) * 0.01f;
-              frame->flags |= DW_IMU_ACCELERATION_X | DW_IMU_ACCELERATION_Y | DW_IMU_ACCELERATION_Z;
-              break;
-          }
-          case SAMPLE_CAN_REPORT_GYRO:
-          {
-              auto ptr = reinterpret_cast<const SampleCANReportGyro*>((*reference).data);
-              // All fields have range: -6.5536 to 6.5534, LSB: 0.0002 rad/s, thus
-              // multiply by 0.0002 to convert to rad/s
-              frame->turnrate[0] = static_cast<float32_t>(ptr->gyroRoll) * 0.0002f;
-              frame->turnrate[1] = 0; // XXX: need to extend DataSpeed protocol for this
-              frame->turnrate[2] = static_cast<float32_t>(ptr->gyroYaw) * 0.0002f;
-              frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_YAW_RATE;
-              break;
-          }
-
-          case OPENIMU_AR:
-          {
-              auto ptr = reinterpret_cast<const angularRate*>((*reference).data);
-              frame->turnrate[0] = static_cast<float32_t>(ptr->roll_rate) * (1/128.0) - 250.0;
-              frame->turnrate[1] = static_cast<float32_t>(ptr->pitch_rate) * (1/128.0) - 250.0;
-              frame->turnrate[2] = static_cast<float32_t>(ptr->yaw_rate) * (1/128.0) - 250.0;
-              frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_PITCH_RATE | DW_IMU_YAW_RATE;
-              break;
-          }
-
-          case OPENIMU_SSI:
-          {
-              auto ptr = reinterpret_cast<const slopeSensor*>((*reference).data);
-              frame->turnrate[0] = static_cast<float32_t>(ptr->roll) * (1/32768) - 250.0;
-              frame->turnrate[1] = static_cast<float32_t>(ptr->pitch) * (1/32768) - 250.0;
-              frame->turnrate[2] = 0;
-              frame->flags |= DW_IMU_ROLL | DW_IMU_PITCH;
-              break;
-          }
-
-          case OPENIMU_ACC:
-          {
-              auto ptr = reinterpret_cast<const accelSensor*>((*reference).data);
-              frame->acceleration[0] = static_cast<float32_t>(ptr-> acceleration_x) * 0.01f - 320.0;
-              frame->acceleration[1] = static_cast<float32_t>(ptr-> acceleration_y) * 0.01f - 320.0;
-              frame->acceleration[2] = static_cast<float32_t>(ptr-> acceleration_z) * 0.01f - 320.0;
-              frame->flags |= DW_IMU_ACCELERATION_X | DW_IMU_ACCELERATION_Y | DW_IMU_ACCELERATION_Z;
-              break;
-          }
-
-          case OPENIMU_MAG:
-          {
-              auto ptr = reinterpret_cast<const magSensor*>((*reference).data);
-              frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0002f;
-              frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0002f;
-              frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0002f;
-              frame->flags |= DW_IMU_MAGNETOMETER_X | DW_IMU_MAGNETOMETER_Y | DW_IMU_MAGNETOMETER_Z;
-              break;
-          }
-
-          default:
-              m_buffer.dequeue();
-              return DW_FAILURE;
-        }
-        */
+        
         m_buffer.dequeue();
         return DW_SUCCESS;
     }

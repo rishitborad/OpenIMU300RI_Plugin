@@ -1,9 +1,14 @@
 #include <imu_messaging.h>
 
-
-// Release Notes:
-// 1. Only supports Decimal parameter values
-// 2.
+// TODO (06/10/2020):
+// 1. Support for hex and decimal both for parameter values
+// 2. Add all configuration parameters
+// 3. Need to add priodity byte to Configureation packets
+// 4. findDataPacket() should be improved to O(1) from O(n).
+//      There is a significant overhead as it gets called at 200hz
+// 5. Units for each IMUFrame needs to be verified atleast once
+// 6. Add const keyword as much as possible
+// 7. Restructoring (Open to extension close to modification)
 
 static vector<pgn> IMU300pgnList =  {
                      {.type = REQUEST_PACKET,         .PF = 234, .PS = 255}   //GET_PACKET
