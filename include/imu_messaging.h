@@ -92,7 +92,7 @@ typedef enum{
   ACCEL_PT            = 15,
   MAGNETOMETER_PT     = 16,
   // Add New Messages here
-  MAX_PGN             = 17,
+  MAX_PGN,
 }imuMessages;
 
 typedef enum{
@@ -102,19 +102,17 @@ typedef enum{
   paramRATE_LPF       = 3,
   paramACCEL_LPF      = 4,
   // Add New parameteres here
-  paramMAX_IMU_PARAMS = 5,
+  paramMAX_IMU_PARAMS,
 }IMU_PARAM_NAME_t;
 
 // TODO: Change this class name to Aceinna IMU
 class IMUMessaging{
 public:
-  //IMUMessaging();
   virtual ~IMUMessaging(){};
   virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) = 0;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) = 0;
-  virtual void parser() = 0;
-  //virtual void createPacket() = 0;
+  virtual void parseDataPacket() = 0;
 private:
 
 };
@@ -128,12 +126,9 @@ public:
   virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) override;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) override;
-  virtual void parser() override;
-  //virtual void createPacket() override;
+  virtual void parseDataPacket() override;
 private:
-  void createPacket();
-  //map<PF,Vector<PS,PS,PS>>
-  map<uint8_t,vector<uint8_t>> PGNMap;
+  map<uint8_t,vector<uint8_t>> PGNMap;      //map<PF,Vector<PS,PS,PS>>
   uint8_t SRCAddress;
   uint8_t ECUAddress;
 };

@@ -205,18 +205,9 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::parser()
+void OpenIMU300::parseDataPacket()
 {
   return;
 }
 
-//----------------------------------------------------------------------------//
-
-/*
-void OpenIMU300::createPacket()
-{
-
-  return;
-}
-*/
 //----------------------------------------------------------------------------//
