@@ -24,11 +24,11 @@ typedef enum{
   paramMAX_IMU_PARAMS,
 }IMU_PARAM_NAME_t;
 
-class IMUMessaging
+class IMU
 {
   public:
 
-    virtual ~IMUMessaging(){};
+    virtual ~IMU(){};
 
     virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
 

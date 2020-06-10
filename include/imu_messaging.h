@@ -83,7 +83,7 @@ struct pgn{
   pgn(PACKET_TYPE_t type, uint8_t pf, uint8_t ps): type(type), PF(pf), PS(ps){}
 };
 
-class OpenIMU300 : public IMUMessaging
+class OpenIMU300 : public IMU
 {
   public:
     OpenIMU300();

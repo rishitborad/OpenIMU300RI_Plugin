@@ -313,7 +313,7 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    IMUMessaging                    *imu300;    // Pointer to IMU abstract class
+    IMU                             *imu300;    // Pointer to IMU abstract class
     imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
     map<IMU_PARAM_NAME_t, uint16_t> paramMap;   // Contrains only non default parameter and value pair
     vector<string>                  paramNames; // Parameter names supported by underlying IMU
