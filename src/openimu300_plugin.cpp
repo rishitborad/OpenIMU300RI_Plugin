@@ -1,4 +1,4 @@
-#include <imu_messaging.h>
+#include <openimu300_plugin.h>
 
 // TODO (06/10/2020):
 // 1. Support for hex and decimal both for parameter values

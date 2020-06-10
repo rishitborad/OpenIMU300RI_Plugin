@@ -33,7 +33,7 @@
 #include <BufferPool.hpp>
 #include <ByteQueue.hpp>
 #include <iostream>
-#include <imu_messaging.h>
+#include <openimu300_plugin.h>
 #include <map>
 using namespace std;
 namespace dw

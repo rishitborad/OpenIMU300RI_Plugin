@@ -14,9 +14,9 @@ set(PUBLIC_DOCS
 
 set(SOURCES
     src/main.cpp
-    src/imu_messaging.cpp
+    src/openimu300_plugin.cpp
     include/imu.h
-    include/imu_messaging.h
+    include/openimu300_plugin.h
     ${SAMPLE_PLUGINS_COMMON_DIR}/ByteQueue.hpp
     ${SAMPLE_PLUGINS_COMMON_DIR}/BufferPool.hpp
     )
