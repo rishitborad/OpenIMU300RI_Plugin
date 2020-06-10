@@ -33,7 +33,6 @@
 #include <BufferPool.hpp>
 #include <ByteQueue.hpp>
 #include <iostream>
-#include <openimu300.h>
 #include <imu_messaging.h>
 #include <map>
 using namespace std;
@@ -62,6 +61,8 @@ typedef struct
     int16_t gyroRoll;
     int16_t gyroYaw;
 } SampleCANReportGyro;
+
+const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
 
 class SampleIMUSensor
 {
@@ -191,13 +192,10 @@ public:
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
         {
-            //printf("ID: %X", result->id);
             if(imu300->isValidMessage(result->id))
             {
-              //printf("Valid");
               break;
             }
-            //printf("\r\n");
         }
 
         *data = reinterpret_cast<uint8_t*>(result);
@@ -207,7 +205,6 @@ public:
 
     dwStatus returnRawData(const uint8_t* data)
     {
-        //cout << "returnRawData\r\n";
         if (data == nullptr)
         {
             return DW_INVALID_HANDLE;
@@ -235,7 +232,7 @@ public:
     dwStatus parseData(dwIMUFrame* frame, size_t* consumed)
     {
         const dwCANMessage* reference;
-        //cout << "Parse Data\r\n";
+
         if (!m_buffer.peek(reinterpret_cast<const uint8_t**>(&reference)))
         {
             return DW_NOT_AVAILABLE;
@@ -252,7 +249,7 @@ public:
           m_buffer.dequeue();
           return DW_FAILURE;
         }
-        
+
         m_buffer.dequeue();
         return DW_SUCCESS;
     }

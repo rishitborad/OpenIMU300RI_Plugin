@@ -1,10 +1,36 @@
-#include <iostream>
-#include <dw/sensors/canbus/CAN.h>
-#include <dw/sensors/imu/IMU.h>
-#include <map>
-#include <vector>
-#include <algorithm>
+#include <openimu300.h>
 using namespace std;
+
+typedef enum{
+  NONE                  = 0,
+  REQUEST_PACKET        = 1,
+  CONFIGURATION_PACKET  = 2,
+  REQ_CONFIG_PACKET     = 3,
+  DATA_PACKET           = 4,
+  REQ_DATA_PACKET       = 5,
+}PACKET_TYPE_t;
+
+typedef enum{
+  GET_PACKET          = 0,
+  ECU_ID              = 1,
+  SOFTWARE_VER        = 2,
+  RESET_ALGORITHM     = 3,
+  SAVE_CONFIGURAITON  = 4,
+  PACKET_RATE         = 5,
+  PACKET_TYPE         = 6,
+  FILTER_FREQ         = 7,
+  ORIENTATION         = 8,
+  MAG_ALIGNMENT       = 9,
+  LEVER_ARM           = 10,
+  BOPS_BANK0          = 11,
+  BOPS_BANK1          = 12,
+  SSI1_PT             = 13,
+  ANGULAR_RATE_PT     = 14,
+  ACCEL_PT            = 15,
+  MAGNETOMETER_PT     = 16,
+  // Add New Messages here
+  MAX_PGN,
+}imuMessages;
 
 // angular rate data payload format
 typedef struct {
@@ -49,23 +75,6 @@ typedef struct {
     uint64_t measure_latency      :       8;        // latency
 } slopeSensor;
 
-typedef struct{
-  uint16_t packetRate;
-  uint16_t packetType;
-  uint16_t orientation;
-  uint16_t rateLPF;
-  uint16_t accelLPF;
-} imuParameters_t;
-
-typedef enum{
-  NONE                  = 0,
-  REQUEST_PACKET        = 1,
-  CONFIGURATION_PACKET  = 2,
-  REQ_CONFIG_PACKET     = 3,
-  DATA_PACKET           = 4,
-  REQ_DATA_PACKET       = 5,
-}PACKET_TYPE_t;
-
 struct pgn{
   PACKET_TYPE_t type;
   uint8_t PF;
@@ -74,66 +83,29 @@ struct pgn{
   pgn(PACKET_TYPE_t type, uint8_t pf, uint8_t ps): type(type), PF(pf), PS(ps){}
 };
 
-typedef enum{
-  GET_PACKET          = 0,
-  ECU_ID              = 1,
-  SOFTWARE_VER        = 2,
-  RESET_ALGORITHM     = 3,
-  SAVE_CONFIGURAITON  = 4,
-  PACKET_RATE         = 5,
-  PACKET_TYPE         = 6,
-  FILTER_FREQ         = 7,
-  ORIENTATION         = 8,
-  MAG_ALIGNMENT       = 9,
-  LEVER_ARM           = 10,
-  BOPS_BANK0          = 11,
-  BOPS_BANK1          = 12,
-  SSI1_PT             = 13,
-  ANGULAR_RATE_PT     = 14,
-  ACCEL_PT            = 15,
-  MAGNETOMETER_PT     = 16,
-  // Add New Messages here
-  MAX_PGN,
-}imuMessages;
-
-typedef enum{
-  paramPACKET_RATE    = 0,
-  paramPACKET_TYPE    = 1,
-  paramORIENTATION    = 2,
-  paramRATE_LPF       = 3,
-  paramACCEL_LPF      = 4,
-  // Add New parameteres here
-  paramMAX_IMU_PARAMS,
-}IMU_PARAM_NAME_t;
-
-// TODO: Change this class name to Aceinna IMU
-class IMUMessaging{
-public:
-  virtual ~IMUMessaging(){};
-  virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
-  virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) = 0;
-  virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) = 0;
-  virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) = 0;
-private:
-
-};
-
 class OpenIMU300 : public IMUMessaging
 {
-public:
-  OpenIMU300();
-  OpenIMU300(uint8_t srcAddr, uint8_t destAddr = 0x80);
-  virtual ~OpenIMU300() override;
-  virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
-  virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) override;
-  virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) override;
-  virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) override;
-private:
+  public:
+    OpenIMU300();
 
-  void getPakcetIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
-  imuMessages findDataPacket(uint8_t pf, uint8_t ps);
+    OpenIMU300(uint8_t srcAddr, uint8_t destAddr = 0x80);
 
-  map<uint8_t,vector<uint8_t>> PGNMap;      //map<PF,Vector<PS,PS,PS>>
-  uint8_t SRCAddress;
-  uint8_t ECUAddress;
+    virtual ~OpenIMU300() override;
+
+    virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
+
+    virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) override;
+
+    virtual bool isValidMessage(uint32_t message_id) override;
+
+    virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) override;
+
+  private:
+    void getPakcetIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
+
+    imuMessages findDataPacket(uint8_t pf, uint8_t ps);
+
+    map<uint8_t,vector<uint8_t>> PGNMap;      //map<PF,Vector<PS,PS,PS>>
+    uint8_t SRCAddress;
+    uint8_t ECUAddress;
 };
