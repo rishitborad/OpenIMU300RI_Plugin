@@ -25,6 +25,16 @@ static vector<pgn> IMU300pgnList =  {
                     ,{.type = DATA_PACKET,            .PF = 255, .PS = 106}   //MAGNETOMETER_PT
                    };
 
+
+const vector<string> paramNames = {"packet-rate=","packet-type=","orientation=","rateLPF=","accelLPF="};
+
+const imuParameters_t defaultParams = {
+          .packetRate   = 1,
+          .packetType   = 1,
+          .orientation  = 0,
+          .rateLPF      = 0x0000,
+          .accelLPF     = 0,
+};
 //----------------------------------------------------------------------------//
 
 OpenIMU300::OpenIMU300()
@@ -44,7 +54,7 @@ OpenIMU300::~OpenIMU300()
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::init()
+void OpenIMU300::init(vector<string> *paramsString, imuParameters_t *params)
 {
   for(int i = 0; i < (int)IMU300pgnList.size(); i++)
   {
@@ -57,6 +67,9 @@ void OpenIMU300::init()
       PGNMap.insert({IMU300pgnList[i].PF, std::vector<uint8_t>{IMU300pgnList[i].PS}});
     }
   }
+
+  *paramsString = paramNames;
+  *params = defaultParams;
 
   #if 0
   for(auto i = PGNMap.begin(); i != PGNMap.end(); i++)

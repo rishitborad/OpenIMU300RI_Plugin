@@ -36,7 +36,7 @@
 #include <openimu300.h>
 #include <imu_messaging.h>
 #include <map>
-
+using namespace std;
 namespace dw
 {
 namespace plugins
@@ -65,53 +65,11 @@ typedef struct
 
 const uint32_t SAMPLE_CAN_REPORT_ACCEL = 0x06B;
 const uint32_t SAMPLE_CAN_REPORT_GYRO  = 0x06C;
-const uint32_t OPENIMU_AR  = 0x0CF02A80;
+const uint32_t OPENIMU_AR   = 0x0CF02A80;
+const uint32_t OPENIMU_ACC  = 0x08F02D80;
+const uint32_t OPENIMU_SSI  = 0x0CF02980;
+const uint32_t OPENIMU_MAG  = 0x0CFD6A80;
 const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
-
-
-static bool getParameterVal(std::string paramsString, std::string searchString, uint16_t* value)
-{
-  std::string param;
-  size_t pos = paramsString.find(searchString);
-  *value = 0;
-  if (pos != std::string::npos)
-  {
-      param   = paramsString.substr(pos);
-      pos     = param.find_first_of(",");
-      param   = param.substr(searchString.length(), pos);
-      int val = static_cast<uint16_t>(stoi(param));
-      // Clamp negative values to zero
-      if(val < 0)
-      {
-        val = 0;
-      }
-      *value = val;
-      return true;
-  }
-  return false;
-}
-
-static void getParams(std::string paramsString, imuParameters_t *params, map<IMU_PARAM_NAME_t, uint16_t> &paramMap)
-{
-  for(unsigned int i = 0; i < paramNames.size(); i++)
-  {
-    uint16_t val = 0;
-    if(getParameterVal(paramsString, paramNames[i], &val))
-    {
-      switch(static_cast<IMU_PARAM_NAME_t>(i))
-      {
-        case IMU_PARAM_NAME_t::paramPACKET_RATE: params->packetRate  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_RATE] = val; break;
-        case IMU_PARAM_NAME_t::paramPACKET_TYPE: params->packetType  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_TYPE] = val;  break;
-        case IMU_PARAM_NAME_t::paramORIENTATION: params->orientation = val; paramMap[IMU_PARAM_NAME_t::paramORIENTATION] = val; break;
-        case IMU_PARAM_NAME_t::paramRATE_LPF:    params->rateLPF     = val; paramMap[IMU_PARAM_NAME_t::paramRATE_LPF] = val; break;
-        case IMU_PARAM_NAME_t::paramACCEL_LPF:   params->accelLPF    = val; paramMap[IMU_PARAM_NAME_t::paramACCEL_LPF] = val; break;
-        default:
-          break;
-      }
-    }
-  }
-}
-
 
 class SampleIMUSensor
 {
@@ -123,7 +81,6 @@ public:
         , m_virtualSensorFlag(true)
         , m_buffer(sizeof(dwCANMessage))
         , m_slot(slotSize)
-        , imuParams(defaultParams)
         , imu300(&instance)
     {
     }
@@ -162,10 +119,12 @@ public:
             return DW_FAILURE;
         }
 
-        imu300->init();
+        // Initialize IMU and get list of paramater strings supported and set parameter struct to default
+        imu300->init(&paramNames, &imuParams);
 
-        // Setup IMU parameters
-        getParams(paramsString, &imuParams, paramMap);
+        // Find IMU supported parameters from the input parameter string
+        // and create a map<parameterName,paramVal>
+        getParams(paramsString);
 
         for(auto i = paramMap.begin(); i != paramMap.end(); i++)
         {
@@ -181,19 +140,23 @@ public:
         if (!isVirtualSensor())
         {
           status = dwSensor_start(m_canSensor);
-          // Configure Sensor
+
           if(status != DW_SUCCESS)
             return status;
 
+          // Configure IMU to parameters received in parameter string
+          // for each paramater in map<parameterName,paramVal> send a message to
+          // the IMU to configure according to the plugin user request
           for(auto i = paramMap.begin(); i != paramMap.end(); i++)
           {
             dwCANMessage packet;
-            imu300->getConfigPacket(i->first, i->second, &packet);
+            imu300->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet);
             printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
 
             if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
               return status;
           }
+
         }
         return DW_SUCCESS;
     }
@@ -236,18 +199,13 @@ public:
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
         {
+            //printf("ID: %X", result->id);
             if(imu300->isValidMessage(result->id))
             {
+              //printf("Valid");
               break;
             }
-
-            /*
-            // Filter invalid messages
-            if (result->id == SAMPLE_CAN_REPORT_ACCEL || result->id == SAMPLE_CAN_REPORT_GYRO || result->id == OPENIMU_AR)
-            {
-                break;
-            }
-            */
+            //printf("\r\n");
         }
 
         *data = reinterpret_cast<uint8_t*>(result);
@@ -257,6 +215,7 @@ public:
 
     dwStatus returnRawData(const uint8_t* data)
     {
+        //cout << "returnRawData\r\n";
         if (data == nullptr)
         {
             return DW_INVALID_HANDLE;
@@ -275,6 +234,7 @@ public:
 
     dwStatus pushData(const uint8_t* data, const size_t size, size_t* lenPushed)
     {
+        //cout << "Pushing Data\r\n";
         m_buffer.enqueue(data, size);
         *lenPushed = size;
         return DW_SUCCESS;
@@ -283,7 +243,7 @@ public:
     dwStatus parseData(dwIMUFrame* frame, size_t* consumed)
     {
         const dwCANMessage* reference;
-
+        //cout << "Parse Data\r\n";
         if (!m_buffer.peek(reinterpret_cast<const uint8_t**>(&reference)))
         {
             return DW_NOT_AVAILABLE;
@@ -319,17 +279,47 @@ public:
               frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_YAW_RATE;
               break;
           }
+
           case OPENIMU_AR:
           {
               auto ptr = reinterpret_cast<const angularRate*>((*reference).data);
-              // All fields have range: -6.5536 to 6.5534, LSB: 0.0002 rad/s, thus
-              // multiply by 0.0002 to convert to rad/s
-              frame->turnrate[0] = static_cast<float32_t>(ptr->roll_rate) * 0.0002f;
-              frame->turnrate[1] = 0; // XXX: need to extend DataSpeed protocol for this
-              frame->turnrate[2] = static_cast<float32_t>(ptr->pitch_rate) * 0.0002f;
-              frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_YAW_RATE;
+              frame->turnrate[0] = static_cast<float32_t>(ptr->roll_rate) * (1/128.0) - 250.0;
+              frame->turnrate[1] = static_cast<float32_t>(ptr->pitch_rate) * (1/128.0) - 250.0;
+              frame->turnrate[2] = static_cast<float32_t>(ptr->yaw_rate) * (1/128.0) - 250.0;
+              frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_PITCH_RATE | DW_IMU_YAW_RATE;
               break;
           }
+
+          case OPENIMU_SSI:
+          {
+              auto ptr = reinterpret_cast<const slopeSensor*>((*reference).data);
+              frame->turnrate[0] = static_cast<float32_t>(ptr->roll) * (1/32768) - 250.0;
+              frame->turnrate[1] = static_cast<float32_t>(ptr->pitch) * (1/32768) - 250.0;
+              frame->turnrate[2] = 0;
+              frame->flags |= DW_IMU_ROLL | DW_IMU_PITCH;
+              break;
+          }
+          */
+          case OPENIMU_ACC:
+          {
+              auto ptr = reinterpret_cast<const accelSensor*>((*reference).data);
+              frame->acceleration[0] = static_cast<float32_t>(ptr-> acceleration_x) * 0.01f - 320.0;
+              frame->acceleration[1] = static_cast<float32_t>(ptr-> acceleration_y) * 0.01f - 320.0;
+              frame->acceleration[2] = static_cast<float32_t>(ptr-> acceleration_z) * 0.01f - 320.0;
+              frame->flags |= DW_IMU_ACCELERATION_X | DW_IMU_ACCELERATION_Y | DW_IMU_ACCELERATION_Z;
+              break;
+          }
+
+          case OPENIMU_MAG:
+          {
+              auto ptr = reinterpret_cast<const magSensor*>((*reference).data);
+              frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0002f;
+              frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0002f;
+              frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0002f;
+              frame->flags |= DW_IMU_MAGNETOMETER_X | DW_IMU_MAGNETOMETER_Y | DW_IMU_MAGNETOMETER_Z;
+              break;
+          }
+
           default:
               m_buffer.dequeue();
               return DW_FAILURE;
@@ -346,6 +336,49 @@ private:
         return m_virtualSensorFlag;
     }
 
+    bool getParameterVal(std::string paramsString, std::string searchString, uint16_t* value)
+    {
+      std::string param;
+      size_t pos = paramsString.find(searchString);
+      *value = 0;
+      if (pos != std::string::npos)
+      {
+          param   = paramsString.substr(pos);
+          pos     = param.find_first_of(",");
+          param   = param.substr(searchString.length(), pos);
+          int val = static_cast<uint16_t>(stoi(param));
+          // Clamp negative values to zero
+          if(val < 0)
+          {
+            val = 0;
+          }
+          *value = val;
+          return true;
+      }
+      return false;
+    }
+
+    void getParams(std::string paramsString)
+    {
+      for(unsigned int i = 0; i < paramNames.size(); i++)
+      {
+        uint16_t val = 0;
+        if(getParameterVal(paramsString, paramNames[i], &val))
+        {
+          switch(static_cast<IMU_PARAM_NAME_t>(i))
+          {
+            case IMU_PARAM_NAME_t::paramPACKET_RATE: imuParams.packetRate  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_RATE] = val; break;
+            case IMU_PARAM_NAME_t::paramPACKET_TYPE: imuParams.packetType  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_TYPE] = val; break;
+            case IMU_PARAM_NAME_t::paramORIENTATION: imuParams.orientation = val; paramMap[IMU_PARAM_NAME_t::paramORIENTATION] = val; break;
+            case IMU_PARAM_NAME_t::paramRATE_LPF:    imuParams.rateLPF     = val; paramMap[IMU_PARAM_NAME_t::paramRATE_LPF] = val;    break;
+            case IMU_PARAM_NAME_t::paramACCEL_LPF:   imuParams.accelLPF    = val; paramMap[IMU_PARAM_NAME_t::paramACCEL_LPF] = val;   break;
+            default:
+              break;
+          }
+        }
+      }
+    }
+
     dwContextHandle_t m_ctx      = nullptr;
     dwSALHandle_t m_sal          = nullptr;
     dwSensorHandle_t m_canSensor = nullptr;
@@ -354,9 +387,10 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    imuParameters_t                 imuParams;  // Parameter struct for the IMU, default set by constructor
     IMUMessaging                    *imu300;    // Pointer to IMU abstract class
+    imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
     map<IMU_PARAM_NAME_t, uint16_t> paramMap;   // Contrains only non default parameter and value pair
+    vector<string>                  paramNames; // Parameter names supported by underlying IMU
 
 };
 } // namespace imu

@@ -5,6 +5,57 @@
 #include <algorithm>
 using namespace std;
 
+// angular rate data payload format
+typedef struct {
+    uint16_t roll_rate;                             // roll  rate
+    uint16_t pitch_rate;                            // pitch rate
+    uint16_t yaw_rate;                              // yaw   rate
+    uint8_t  pitch_merit          :       2;        // pitch rate merit
+    uint8_t  roll_merit           :       2;        // roll  rate merit
+    uint8_t  yaw_merit            :       2;        // yaw  rate merit
+    uint8_t  rsvd                 :       2;        // rsvd
+    uint8_t  measurement_latency;                   // latency
+} angularRate;
+
+// accleration data payload format
+typedef struct {
+    uint16_t   acceleration_x;                      // x-axis acceleration
+    uint16_t   acceleration_y;                      // y-axis acceleration
+    uint16_t   acceleration_z;                      // z-axis acceleration
+    uint8_t    lateral_merit        :       2;      // laterar acc merit
+    uint8_t    longitudinal_merit   :       2;      // longitudinal merit
+    uint8_t    vertical_merit       :       2;      // vertical merit
+    uint8_t    transmit_rate        :       2;      // repetition rate
+    uint8_t    rsvd;
+} accelSensor;
+
+// accleration data payload format
+typedef struct {
+    uint16_t   mag_x;                        // x-axis mag data
+    uint16_t   mag_y;                        // y-axis mag data
+    uint16_t   mag_z;                        // z-axis mag data
+    uint16_t   unuzed;
+} magSensor;
+
+// slope sensor data payload format
+typedef struct {
+    uint64_t pitch                :       24;       // pitch
+    uint64_t roll                 :       24;       // roll
+    uint64_t pitch_compensation   :       2;        // pitch compensation
+    uint64_t pitch_merit          :       2;        // pitch merit
+    uint64_t roll_compensation    :       2;        // roll compensation
+    uint64_t roll_merit           :       2;        // roll merit
+    uint64_t measure_latency      :       8;        // latency
+} slopeSensor;
+
+typedef struct{
+  uint16_t packetRate;
+  uint16_t packetType;
+  uint16_t orientation;
+  uint16_t rateLPF;
+  uint16_t accelLPF;
+} imuParameters_t;
+
 typedef enum{
   NONE                  = 0,
   REQUEST_PACKET        = 1,
@@ -40,6 +91,7 @@ typedef enum{
   ANGULAR_RATE_PT     = 14,
   ACCEL_PT            = 15,
   MAGNETOMETER_PT     = 16,
+  // Add New Messages here
   MAX_PGN             = 17,
 }imuMessages;
 
@@ -49,6 +101,7 @@ typedef enum{
   paramORIENTATION    = 2,
   paramRATE_LPF       = 3,
   paramACCEL_LPF      = 4,
+  // Add New parameteres here
   paramMAX_IMU_PARAMS = 5,
 }IMU_PARAM_NAME_t;
 
@@ -57,7 +110,7 @@ class IMUMessaging{
 public:
   //IMUMessaging();
   virtual ~IMUMessaging(){};
-  virtual void init() = 0;
+  virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) = 0;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) = 0;
   virtual void parser() = 0;
@@ -72,7 +125,7 @@ public:
   OpenIMU300();
   OpenIMU300(uint8_t srcAddr, uint8_t destAddr = 0x80);
   virtual ~OpenIMU300() override;
-  virtual void init() override;
+  virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) override;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) override;
   virtual void parser() override;
