@@ -1,5 +1,6 @@
 #include <iostream>
 #include <dw/sensors/canbus/CAN.h>
+#include <dw/sensors/imu/IMU.h>
 #include <map>
 #include <vector>
 #include <algorithm>
@@ -112,7 +113,7 @@ public:
   virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) = 0;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) = 0;
-  virtual void parseDataPacket() = 0;
+  virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) = 0;
 private:
 
 };
@@ -126,8 +127,12 @@ public:
   virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
   virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) override;
   virtual bool isValidMessage(uint32_t message_id/*, PACKET_TYPE_t *type*/) override;
-  virtual void parseDataPacket() override;
+  virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) override;
 private:
+
+  void getPakcetIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
+  imuMessages findDataPacket(uint8_t pf, uint8_t ps);
+
   map<uint8_t,vector<uint8_t>> PGNMap;      //map<PF,Vector<PS,PS,PS>>
   uint8_t SRCAddress;
   uint8_t ECUAddress;

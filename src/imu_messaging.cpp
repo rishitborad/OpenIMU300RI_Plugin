@@ -35,6 +35,32 @@ const imuParameters_t defaultParams = {
           .rateLPF      = 0x0000,
           .accelLPF     = 0,
 };
+
+//----------------------------------------------------------------------------//
+
+void OpenIMU300::getPakcetIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t *ps)
+{
+  *pf = (uint8_t)((0x00FF0000 & message_id) >> 16);
+  *ps = (uint8_t)((0x0000FF00 & message_id) >> 8);
+}
+
+//----------------------------------------------------------------------------//
+
+imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
+{
+  for(int i = 0; i < static_cast<int>(IMU300pgnList.size()); i++)
+  {
+    if((IMU300pgnList[i].type & DATA_PACKET) != 0)
+    {
+      if(IMU300pgnList[i].PF == pf && IMU300pgnList[i].PS == ps)
+      {
+        return static_cast<imuMessages>(i);
+      }
+    }
+  }
+  return MAX_PGN;
+}
+
 //----------------------------------------------------------------------------//
 
 OpenIMU300::OpenIMU300()
@@ -93,18 +119,18 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
     return false;
   }
 
-  uint8_t PF = (uint8_t)((0x00FF0000 & message_id) >> 16);
-  uint8_t PS = (uint8_t)((0x0000FF00 & message_id) >> 8);
+  uint8_t pf = 0, ps = 0;
 
-  auto map_itr = PGNMap.find(PF);
+  getPakcetIdentifiers(message_id, &pf, &ps);
+
+  auto map_itr = PGNMap.find(pf);
   if(map_itr == PGNMap.end())             // PF key not available?
     return false;
 
-  auto vec_itr = find(map_itr->second.begin(), map_itr->second.end(), PS);
+  auto vec_itr = find(map_itr->second.begin(), map_itr->second.end(), ps);
   if(vec_itr == map_itr->second.end())
     return false;
 
-  //printf("Valid: %d %d\r\n", PF, PS);
   return true;
 }
 
@@ -205,9 +231,61 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::parseDataPacket()
+bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
 {
-  return;
+  uint8_t pf = 0, ps = 0;
+
+  getPakcetIdentifiers(packet.id, &pf, &ps);
+
+  // TODO: Needs improvement, change from O(n) to O(1)
+  imuMessages dataPacketType = findDataPacket(pf, ps);
+
+  switch(dataPacketType)
+  {
+    case ANGULAR_RATE_PT:
+    {
+        auto ptr = reinterpret_cast<const angularRate*>(packet.data);
+        frame->turnrate[0] = static_cast<float32_t>(ptr->roll_rate) * (1/128.0) - 250.0;
+        frame->turnrate[1] = static_cast<float32_t>(ptr->pitch_rate) * (1/128.0) - 250.0;
+        frame->turnrate[2] = static_cast<float32_t>(ptr->yaw_rate) * (1/128.0) - 250.0;
+        frame->flags |= DW_IMU_ROLL_RATE | DW_IMU_PITCH_RATE | DW_IMU_YAW_RATE;
+        break;
+    }
+
+    case SSI1_PT:
+    {
+        auto ptr = reinterpret_cast<const slopeSensor*>(packet.data);
+        frame->turnrate[0] = static_cast<float32_t>(ptr->roll) * (1/32768) - 250.0;
+        frame->turnrate[1] = static_cast<float32_t>(ptr->pitch) * (1/32768) - 250.0;
+        frame->turnrate[2] = 0;
+        frame->flags |= DW_IMU_ROLL | DW_IMU_PITCH;
+        break;
+    }
+
+    case ACCEL_PT :
+    {
+        auto ptr = reinterpret_cast<const accelSensor*>(packet.data);
+        frame->acceleration[0] = static_cast<float32_t>(ptr-> acceleration_x) * 0.01f - 320.0;
+        frame->acceleration[1] = static_cast<float32_t>(ptr-> acceleration_y) * 0.01f - 320.0;
+        frame->acceleration[2] = static_cast<float32_t>(ptr-> acceleration_z) * 0.01f - 320.0;
+        frame->flags |= DW_IMU_ACCELERATION_X | DW_IMU_ACCELERATION_Y | DW_IMU_ACCELERATION_Z;
+        break;
+    }
+
+    case MAGNETOMETER_PT:
+    {
+        auto ptr = reinterpret_cast<const magSensor*>(packet.data);
+        frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0002f;
+        frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0002f;
+        frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0002f;
+        frame->flags |= DW_IMU_MAGNETOMETER_X | DW_IMU_MAGNETOMETER_Y | DW_IMU_MAGNETOMETER_Z;
+        break;
+    }
+    default:
+      return false;
+  }
+
+  return true;
 }
 
 //----------------------------------------------------------------------------//

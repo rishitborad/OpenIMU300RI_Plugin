@@ -255,6 +255,13 @@ public:
         *frame              = {};
         frame->timestamp_us = (*reference).timestamp_us;
 
+
+        if(!imu300->parseDataPacket(*reference, frame))
+        {
+          m_buffer.dequeue();
+          return DW_FAILURE;
+        }
+        /*
         switch ((*reference).id)
         {
           case SAMPLE_CAN_REPORT_ACCEL:
@@ -299,7 +306,7 @@ public:
               frame->flags |= DW_IMU_ROLL | DW_IMU_PITCH;
               break;
           }
-          */
+
           case OPENIMU_ACC:
           {
               auto ptr = reinterpret_cast<const accelSensor*>((*reference).data);
@@ -324,6 +331,7 @@ public:
               m_buffer.dequeue();
               return DW_FAILURE;
         }
+        */
         m_buffer.dequeue();
         return DW_SUCCESS;
     }
