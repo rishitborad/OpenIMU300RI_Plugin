@@ -1,4 +1,4 @@
-#include <openimu300.h>
+#include <imu.h>
 using namespace std;
 
 typedef enum{
