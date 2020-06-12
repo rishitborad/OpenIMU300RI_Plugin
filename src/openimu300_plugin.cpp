@@ -150,7 +150,7 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         pgn info = IMU300pgnList[PACKET_RATE];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
         {
-          packet->id = 0x00000000;
+          packet->id = 0x18000000;
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
@@ -166,7 +166,7 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         pgn info = IMU300pgnList[PACKET_TYPE];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
         {
-          packet->id = 0x00000000;
+          packet->id = 0x18000000;
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
@@ -183,7 +183,7 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         pgn info = IMU300pgnList[ORIENTATION];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
         {
-          packet->id = 0x00000000;
+          packet->id = 0x18000000;
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
@@ -200,7 +200,7 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         pgn info = IMU300pgnList[FILTER_FREQ];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
         {
-          packet->id = 0x00000000;
+          packet->id = 0x18000000;
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
@@ -217,7 +217,7 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         pgn info = IMU300pgnList[FILTER_FREQ];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
         {
-          packet->id = 0x00000000;
+          packet->id = 0x18000000;
           packet->id |= (info.PF << 16);
           packet->id |= (info.PS << 8);
           packet->id |= static_cast<uint8_t>(SRCAddress);
