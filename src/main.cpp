@@ -64,21 +64,21 @@ typedef struct
 
 const size_t SAMPLE_BUFFER_POOL_SIZE = 5;
 
-class SampleIMUSensor
+class AceinnaIMUSensor
 {
 public:
-    SampleIMUSensor(dwContextHandle_t ctx, dwSensorHandle_t canSensor, size_t slotSize)
+    AceinnaIMUSensor(dwContextHandle_t ctx, dwSensorHandle_t canSensor, size_t slotSize)
         : m_ctx(ctx)
         , m_sal(nullptr)
         , m_canSensor(canSensor)
         , m_virtualSensorFlag(true)
         , m_buffer(sizeof(dwCANMessage))
         , m_slot(slotSize)
-        , imu300(&instance)
+        , imu(&instance)
     {
     }
 
-    ~SampleIMUSensor() = default;
+    ~AceinnaIMUSensor() = default;
 
     dwStatus createSensor(dwSALHandle_t sal, const char* params)
     {
@@ -113,7 +113,7 @@ public:
         }
 
         // Initialize IMU and get list of paramater strings supported and set parameter struct to default
-        imu300->init(&paramNames, &imuParams);
+        imu->init(&paramNames, &imuParams);
 
         // Find IMU supported parameters from the input parameter string
         // and create a map<parameterName,paramVal>
@@ -143,7 +143,7 @@ public:
           for(auto i = paramMap.begin(); i != paramMap.end(); i++)
           {
             dwCANMessage packet;
-            imu300->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet);
+            imu->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet);
             printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
 
             if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
@@ -192,7 +192,7 @@ public:
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
         {
-            if(imu300->isValidMessage(result->id))
+            if(imu->isValidMessage(result->id))
             {
               break;
             }
@@ -244,7 +244,7 @@ public:
         *frame              = {};
         frame->timestamp_us = (*reference).timestamp_us;
 
-        if(!imu300->parseDataPacket(*reference, frame))
+        if(!imu->parseDataPacket(*reference, frame))
         {
           m_buffer.dequeue();
           return DW_FAILURE;
@@ -254,7 +254,7 @@ public:
         return DW_SUCCESS;
     }
 
-    static std::vector<std::unique_ptr<dw::plugins::imu::SampleIMUSensor>> g_sensorContext;
+    static std::vector<std::unique_ptr<dw::plugins::imu::AceinnaIMUSensor>> g_sensorContext;
 
 private:
     inline bool isVirtualSensor()
@@ -313,7 +313,7 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    IMU                             *imu300;    // Pointer to IMU abstract class
+    IMU                             *imu;    // Pointer to IMU abstract class
     imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
     map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
     vector<string>                  paramNames; // Parameter names supported by underlying IMU
@@ -323,12 +323,12 @@ private:
 } // namespace plugins
 } // namespace dw
 
-std::vector<std::unique_ptr<dw::plugins::imu::SampleIMUSensor>> dw::plugins::imu::SampleIMUSensor::g_sensorContext;
+std::vector<std::unique_ptr<dw::plugins::imu::AceinnaIMUSensor>> dw::plugins::imu::AceinnaIMUSensor::g_sensorContext;
 
 //#######################################################################################
-static bool checkValid(dw::plugins::imu::SampleIMUSensor* sensor)
+static bool checkValid(dw::plugins::imu::AceinnaIMUSensor* sensor)
 {
-    for (auto& i : dw::plugins::imu::SampleIMUSensor::g_sensorContext)
+    for (auto& i : dw::plugins::imu::AceinnaIMUSensor::g_sensorContext)
     {
         if (i.get() == sensor)
             return true;
@@ -347,10 +347,10 @@ dwStatus _dwSensorPlugin_createHandle(dwSensorPluginSensorHandle_t* sensor, dwSe
         return DW_INVALID_ARGUMENT;
 
     size_t slotSize    = dw::plugins::imu::SAMPLE_BUFFER_POOL_SIZE; // Size of memory pool to read raw data from the sensor
-    auto sensorContext = new dw::plugins::imu::SampleIMUSensor(ctx, DW_NULL_HANDLE, slotSize);
+    auto sensorContext = new dw::plugins::imu::AceinnaIMUSensor(ctx, DW_NULL_HANDLE, slotSize);
 
-    dw::plugins::imu::SampleIMUSensor::g_sensorContext.push_back(std::unique_ptr<dw::plugins::imu::SampleIMUSensor>(sensorContext));
-    *sensor = dw::plugins::imu::SampleIMUSensor::g_sensorContext.back().get();
+    dw::plugins::imu::AceinnaIMUSensor::g_sensorContext.push_back(std::unique_ptr<dw::plugins::imu::AceinnaIMUSensor>(sensorContext));
+    *sensor = dw::plugins::imu::AceinnaIMUSensor::g_sensorContext.back().get();
 
     // Populate sensor properties
     properties->packetSize = sizeof(dwCANMessage);
@@ -362,7 +362,7 @@ dwStatus _dwSensorPlugin_createHandle(dwSensorPluginSensorHandle_t* sensor, dwSe
 dwStatus _dwSensorPlugin_createSensor(const char* params, dwSALHandle_t sal, dwSensorPluginSensorHandle_t sensor)
 {
 
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -374,7 +374,7 @@ dwStatus _dwSensorPlugin_createSensor(const char* params, dwSALHandle_t sal, dwS
 //#######################################################################################
 dwStatus _dwSensorPlugin_start(dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -386,22 +386,22 @@ dwStatus _dwSensorPlugin_start(dwSensorPluginSensorHandle_t sensor)
 //#######################################################################################
 dwStatus _dwSensorPlugin_release(dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
     }
 
     for (auto iter =
-                    dw::plugins::imu::SampleIMUSensor::g_sensorContext.begin();
-                    iter != dw::plugins::imu::SampleIMUSensor::g_sensorContext.end();
+                    dw::plugins::imu::AceinnaIMUSensor::g_sensorContext.begin();
+                    iter != dw::plugins::imu::AceinnaIMUSensor::g_sensorContext.end();
                     ++iter)
     {
         if ((*iter).get() == sensor)
         {
             sensorContext->stopSensor();
             sensorContext->releaseSensor();
-            dw::plugins::imu::SampleIMUSensor::g_sensorContext.erase(iter);
+            dw::plugins::imu::AceinnaIMUSensor::g_sensorContext.erase(iter);
             return DW_SUCCESS;
         }
     }
@@ -411,7 +411,7 @@ dwStatus _dwSensorPlugin_release(dwSensorPluginSensorHandle_t sensor)
 //#######################################################################################
 dwStatus _dwSensorPlugin_stop(dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -423,7 +423,7 @@ dwStatus _dwSensorPlugin_stop(dwSensorPluginSensorHandle_t sensor)
 //#######################################################################################
 dwStatus _dwSensorPlugin_reset(dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -436,7 +436,7 @@ dwStatus _dwSensorPlugin_reset(dwSensorPluginSensorHandle_t sensor)
 dwStatus _dwSensorPlugin_readRawData(const uint8_t** data, size_t* size, dwTime_t* /*timestamp*/,
                                      dwTime_t timeout_us, dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -448,7 +448,7 @@ dwStatus _dwSensorPlugin_readRawData(const uint8_t** data, size_t* size, dwTime_
 //#######################################################################################
 dwStatus _dwSensorPlugin_returnRawData(const uint8_t* data, dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -460,7 +460,7 @@ dwStatus _dwSensorPlugin_returnRawData(const uint8_t* data, dwSensorPluginSensor
 //#######################################################################################
 dwStatus _dwSensorPlugin_pushData(size_t* lenPushed, const uint8_t* data, const size_t size, dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
@@ -472,7 +472,7 @@ dwStatus _dwSensorPlugin_pushData(size_t* lenPushed, const uint8_t* data, const 
 //#######################################################################################
 dwStatus _dwSensorIMUPlugin_parseDataBuffer(dwIMUFrame* frame, size_t* consumed, dwSensorPluginSensorHandle_t sensor)
 {
-    auto sensorContext = reinterpret_cast<dw::plugins::imu::SampleIMUSensor*>(sensor);
+    auto sensorContext = reinterpret_cast<dw::plugins::imu::AceinnaIMUSensor*>(sensor);
     if (!checkValid(sensorContext))
     {
         return DW_INVALID_HANDLE;
