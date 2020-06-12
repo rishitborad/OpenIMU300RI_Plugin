@@ -291,13 +291,13 @@ private:
         uint16_t val = 0;
         if(getParameterVal(paramsString, paramNames[i], &val))
         {
-          switch(static_cast<IMU_PARAM_NAME_t>(i))
+          switch(static_cast<configParams>(i))
           {
-            case IMU_PARAM_NAME_t::paramPACKET_RATE: imuParams.packetRate  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_RATE] = val; break;
-            case IMU_PARAM_NAME_t::paramPACKET_TYPE: imuParams.packetType  = val; paramMap[IMU_PARAM_NAME_t::paramPACKET_TYPE] = val; break;
-            case IMU_PARAM_NAME_t::paramORIENTATION: imuParams.orientation = val; paramMap[IMU_PARAM_NAME_t::paramORIENTATION] = val; break;
-            case IMU_PARAM_NAME_t::paramRATE_LPF:    imuParams.rateLPF     = val; paramMap[IMU_PARAM_NAME_t::paramRATE_LPF] = val;    break;
-            case IMU_PARAM_NAME_t::paramACCEL_LPF:   imuParams.accelLPF    = val; paramMap[IMU_PARAM_NAME_t::paramACCEL_LPF] = val;   break;
+            case configParams::paramPACKET_RATE: imuParams.packetRate  = val; paramMap[configParams::paramPACKET_RATE] = val; break;
+            case configParams::paramPACKET_TYPE: imuParams.packetType  = val; paramMap[configParams::paramPACKET_TYPE] = val; break;
+            case configParams::paramORIENTATION: imuParams.orientation = val; paramMap[configParams::paramORIENTATION] = val; break;
+            case configParams::paramRATE_LPF:    imuParams.rateLPF     = val; paramMap[configParams::paramRATE_LPF] = val;    break;
+            case configParams::paramACCEL_LPF:   imuParams.accelLPF    = val; paramMap[configParams::paramACCEL_LPF] = val;   break;
             default:
               break;
           }
@@ -315,7 +315,7 @@ private:
 
     IMU                             *imu300;    // Pointer to IMU abstract class
     imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
-    map<IMU_PARAM_NAME_t, uint16_t> paramMap;   // Contrains only non default parameter and value pair
+    map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
     vector<string>                  paramNames; // Parameter names supported by underlying IMU
 
 };

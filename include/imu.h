@@ -22,7 +22,7 @@ typedef enum{
   paramACCEL_LPF      = 4,
   // Add New parameteres here
   paramMAX_IMU_PARAMS,
-}IMU_PARAM_NAME_t;
+}configParams;
 
 class IMU
 {
@@ -32,7 +32,7 @@ class IMU
 
     virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
 
-    virtual void getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet) = 0;
+    virtual void getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) = 0;
 
     virtual bool isValidMessage(uint32_t message_id) = 0;
 

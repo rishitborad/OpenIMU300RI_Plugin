@@ -141,11 +141,11 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCANMessage *packet)
+void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet)
 {
-  switch(static_cast<IMU_PARAM_NAME_t>(param))
+  switch(static_cast<configParams>(param))
   {
-    case IMU_PARAM_NAME_t::paramPACKET_RATE:
+    case configParams::paramPACKET_RATE:
       {
         pgn info = IMU300pgnList[PACKET_RATE];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
@@ -161,7 +161,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
         }
         return;
       }
-    case IMU_PARAM_NAME_t::paramPACKET_TYPE:
+    case configParams::paramPACKET_TYPE:
       {
         pgn info = IMU300pgnList[PACKET_TYPE];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
@@ -178,7 +178,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
         }
         return;
       }
-    case IMU_PARAM_NAME_t::paramORIENTATION:
+    case configParams::paramORIENTATION:
       {
         pgn info = IMU300pgnList[ORIENTATION];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
@@ -195,7 +195,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
         }
         return;
       }
-    case IMU_PARAM_NAME_t::paramRATE_LPF:
+    case configParams::paramRATE_LPF:
       {
         pgn info = IMU300pgnList[FILTER_FREQ];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
@@ -212,7 +212,7 @@ void OpenIMU300::getConfigPacket(IMU_PARAM_NAME_t param, uint16_t paramVal, dwCA
         }
         return;
       }
-    case IMU_PARAM_NAME_t::paramACCEL_LPF:
+    case configParams::paramACCEL_LPF:
       {
         pgn info = IMU300pgnList[FILTER_FREQ];
         if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
