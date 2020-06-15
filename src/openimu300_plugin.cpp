@@ -2,8 +2,7 @@
 
 // TODO (06/10/2020):
 // 1. Support for hex and decimal both for parameter values
-// 2. Add all configuration parameters
-// 3. Need to add priodity byte to Configureation packets
+// 2. Set Bank of PS number configuration not supported
 // 4. findDataPacket() should be improved to O(1) from O(n).
 //      There is a significant overhead as it gets called at 200hz
 // 5. Units for each IMUFrame needs to be verified atleast once
@@ -31,7 +30,7 @@ static vector<pgn> IMU300pgnList =  {
                    };
 
 
-const vector<string> paramNames = {"packet-rate=","packet-type=","orientation=","rateLPF=","accelLPF=","saveConfig=","resetAlgo="};
+const vector<string> paramNames = {"packetRate=","packetType=","orientation=","rateLPF=","accelLPF=","saveConfig=","resetAlgo="};
 
 const vector<uint8_t> validPacketRates = {0,1,2,4,5,10,20,25,50};
 const vector<uint8_t> validPacketTypes = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
@@ -353,9 +352,9 @@ bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
     case MAGNETOMETER_PT:
     {
         auto ptr = reinterpret_cast<const magSensor*>(packet.data);
-        frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0004f - 8;
-        frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0004f - 8;
-        frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0004f - 8;
+        frame->magnetometer[0] = ((static_cast<float32_t>(ptr->mag_x) * 0.00025f) - 8) * (100 /*To uTesla*/);
+        frame->magnetometer[1] = ((static_cast<float32_t>(ptr->mag_y) * 0.00025f) - 8) * (100 /*To uTesla*/);
+        frame->magnetometer[2] = ((static_cast<float32_t>(ptr->mag_z) * 0.00025f) - 8) * (100 /*To uTesla*/);
         frame->flags |= DW_IMU_MAGNETOMETER_X | DW_IMU_MAGNETOMETER_Y | DW_IMU_MAGNETOMETER_Z;
         break;
     }
