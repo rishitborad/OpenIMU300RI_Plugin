@@ -20,6 +20,8 @@ typedef enum{
   paramORIENTATION    = 2,
   paramRATE_LPF       = 3,
   paramACCEL_LPF      = 4,
+  paramSAVE_CONFIG    = 5,
+  paramRESET_ALGO     = 6,
   // Add New parameteres here
   paramMAX_IMU_PARAMS,
 }configParams;

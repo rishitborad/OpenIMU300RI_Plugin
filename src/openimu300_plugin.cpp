@@ -229,6 +229,40 @@ void OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
         }
         return;
       }
+      case configParams::paramSAVE_CONFIG:
+        {
+          pgn info = IMU300pgnList[SAVE_CONFIGURAITON];
+          if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
+          {
+            packet->id = 0x18000000;
+            packet->id |= (info.PF << 16);
+            packet->id |= (info.PS << 8);
+            packet->id |= static_cast<uint8_t>(SRCAddress);
+            packet->size = 3;
+            packet->timestamp_us = 0;
+            packet->data[0] = 0;
+            packet->data[1] = this->ECUAddress;
+            packet->data[2] = 0;
+          }
+          return;
+        }
+      case configParams::paramRESET_ALGO:
+        {
+          pgn info = IMU300pgnList[RESET_ALGORITHM];
+          if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
+          {
+            packet->id = 0x18000000;
+            packet->id |= (info.PF << 16);
+            packet->id |= (info.PS << 8);
+            packet->id |= static_cast<uint8_t>(SRCAddress);
+            packet->size = 3;
+            packet->timestamp_us = 0;
+            packet->data[0] = 0;
+            packet->data[1] = this->ECUAddress;
+            packet->data[2] = 0;
+          }
+          return;
+        }
     default:
       break;
   }
@@ -260,9 +294,9 @@ bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
     case SSI1_PT:
     {
         auto ptr = reinterpret_cast<const slopeSensor*>(packet.data);
-        frame->turnrate[0] = static_cast<float32_t>(ptr->roll) * (1/32768) - 250.0;
-        frame->turnrate[1] = static_cast<float32_t>(ptr->pitch) * (1/32768) - 250.0;
-        frame->turnrate[2] = 0;
+        frame->orientation[0] = static_cast<float32_t>(ptr->roll) * (1/32768) - 250.0;
+        frame->orientation[1] = static_cast<float32_t>(ptr->pitch) * (1/32768) - 250.0;
+        frame->orientation[2] = 0;
         frame->flags |= DW_IMU_ROLL | DW_IMU_PITCH;
         break;
     }
@@ -280,9 +314,9 @@ bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
     case MAGNETOMETER_PT:
     {
         auto ptr = reinterpret_cast<const magSensor*>(packet.data);
-        frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0002f;
-        frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0002f;
-        frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0002f;
+        frame->magnetometer[0] = static_cast<float32_t>(ptr->mag_x) * 0.0004f - 8;
+        frame->magnetometer[1] = static_cast<float32_t>(ptr->mag_y) * 0.0004f - 8;
+        frame->magnetometer[2] = static_cast<float32_t>(ptr->mag_z) * 0.0004f - 8;
         frame->flags |= DW_IMU_MAGNETOMETER_X | DW_IMU_MAGNETOMETER_Y | DW_IMU_MAGNETOMETER_Z;
         break;
     }
