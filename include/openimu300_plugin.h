@@ -94,7 +94,7 @@ class OpenIMU300 : public IMU
 
     virtual void init(vector<string> *paramsString, imuParameters_t *params) override;
 
-    virtual void getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) override;
+    virtual bool getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) override;
 
     virtual bool isValidMessage(uint32_t message_id) override;
 

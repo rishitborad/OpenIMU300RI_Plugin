@@ -143,13 +143,16 @@ public:
           for(auto i = paramMap.begin(); i != paramMap.end(); i++)
           {
             dwCANMessage packet;
-            imu->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet);
+            if(!imu->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet))
+            {
+              cout << "IMU CONFIGURATION ERROR: " << paramNames[i->first] << i->second <<" is not supported by the IMU\r\n";
+              return DW_FAILURE;
+            }
             printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
 
-            if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
-              return status;
+            //if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
+            //  return status;
           }
-
         }
         return DW_SUCCESS;
     }
@@ -298,6 +301,8 @@ private:
             case configParams::paramORIENTATION: imuParams.orientation = val; paramMap[configParams::paramORIENTATION] = val; break;
             case configParams::paramRATE_LPF:    imuParams.rateLPF     = val; paramMap[configParams::paramRATE_LPF] = val;    break;
             case configParams::paramACCEL_LPF:   imuParams.accelLPF    = val; paramMap[configParams::paramACCEL_LPF] = val;   break;
+            case configParams::paramSAVE_CONFIG: imuParams.saveConfig  = val; paramMap[configParams::paramSAVE_CONFIG] = val; break;
+            case configParams::paramRESET_ALGO:  imuParams.resetAlgo   = val; paramMap[configParams::paramRESET_ALGO] = val;  break;
             default:
               break;
           }

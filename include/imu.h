@@ -12,6 +12,8 @@ typedef struct{
   uint16_t orientation;
   uint16_t rateLPF;
   uint16_t accelLPF;
+  uint8_t saveConfig;
+  uint8_t resetAlgo;
 } imuParameters_t;
 
 typedef enum{
@@ -34,7 +36,7 @@ class IMU
 
     virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
 
-    virtual void getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) = 0;
+    virtual bool getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) = 0;
 
     virtual bool isValidMessage(uint32_t message_id) = 0;
 
