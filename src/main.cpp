@@ -150,8 +150,8 @@ public:
             }
             printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
 
-            //if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
-            //  return status;
+            if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
+              return status;
           }
         }
         return DW_SUCCESS;
