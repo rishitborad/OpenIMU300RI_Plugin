@@ -113,15 +113,11 @@ public:
         }
 
         // Initialize IMU and get list of paramater strings supported and set parameter struct to default
-        imu->init(&paramNames/*, &imuParams*/);
+        imu->init(paramsString, configMessages);
 
-        // Find IMU supported parameters from the input parameter string
-        // and create a map<parameterName,paramVal>
-        getParams(paramsString);
-
-        for(auto i = paramMap.begin(); i != paramMap.end(); i++)
+        for(size_t i = 0; i < configMessages.size(); i++)
         {
-          printf("param[%d] = %d\r\n", i->first, i->second);
+          printf("configMessages[%lu].id = %X\r\n", i, configMessages[i].id);
         }
 
         return DW_SUCCESS;
@@ -140,17 +136,9 @@ public:
           // Configure IMU to parameters received in parameter string
           // for each paramater in map<parameterName,paramVal> send a message to
           // the IMU to configure according to the plugin user request
-          for(auto i = paramMap.begin(); i != paramMap.end(); i++)
+          for(size_t i = 0; i < configMessages.size(); i++)
           {
-            dwCANMessage packet;
-            if(!imu->getConfigPacket(/*ParamName*/i->first, /*ParamValue*/i->second, &packet))
-            {
-              cout << "IMU CONFIGURATION ERROR: " << paramNames[i->first] << i->second <<" is not supported by the IMU\r\n";
-              return DW_FAILURE;
-            }
-            printf("PAYLOAD: %X %X %X %X\r\n",packet.id, packet.data[0], packet.data[1], packet.data[2]);
-
-            if(dwSensorCAN_sendMessage(&packet, 100000, m_canSensor) != DW_SUCCESS)
+            if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
               return status;
           }
         }
@@ -195,10 +183,10 @@ public:
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
         {
-            if(imu->isValidMessage(result->id))
-            {
-              break;
-            }
+          if(imu->isValidMessage(result->id))
+          {
+            break;
+          }
         }
 
         *data = reinterpret_cast<uint8_t*>(result);
@@ -252,7 +240,7 @@ public:
           m_buffer.dequeue();
           return DW_FAILURE;
         }
-
+        
         m_buffer.dequeue();
         return DW_SUCCESS;
     }
@@ -265,51 +253,6 @@ private:
         return m_virtualSensorFlag;
     }
 
-    bool getParameterVal(std::string paramsString, std::string searchString, uint16_t* value)
-    {
-      std::string param;
-      size_t pos = paramsString.find(searchString);
-      *value = 0;
-      if (pos != std::string::npos)
-      {
-          param   = paramsString.substr(pos);
-          pos     = param.find_first_of(",");
-          param   = param.substr(searchString.length(), pos);
-          int val = static_cast<uint16_t>(stoi(param));
-          // Clamp negative values to zero
-          if(val < 0)
-          {
-            val = 0;
-          }
-          *value = val;
-          return true;
-      }
-      return false;
-    }
-
-    void getParams(std::string paramsString)
-    {
-      for(unsigned int i = 0; i < paramNames.size(); i++)
-      {
-        uint16_t val = 0;
-        if(getParameterVal(paramsString, paramNames[i], &val))
-        {
-          switch(static_cast<configParams>(i))
-          {
-            case configParams::paramPACKET_RATE: /*imuParams.packetRate  = val;*/ paramMap[configParams::paramPACKET_RATE] = val; break;
-            case configParams::paramPACKET_TYPE: /*imuParams.packetType  = val;*/ paramMap[configParams::paramPACKET_TYPE] = val; break;
-            case configParams::paramORIENTATION: /*imuParams.orientation = val;*/ paramMap[configParams::paramORIENTATION] = val; break;
-            case configParams::paramRATE_LPF:    /*imuParams.rateLPF     = val;*/ paramMap[configParams::paramRATE_LPF] = val;    break;
-            case configParams::paramACCEL_LPF:   /*imuParams.accelLPF    = val;*/ paramMap[configParams::paramACCEL_LPF] = val;   break;
-            case configParams::paramSAVE_CONFIG: /*imuParams.saveConfig  = val;*/ paramMap[configParams::paramSAVE_CONFIG] = val; break;
-            case configParams::paramRESET_ALGO:  /*imuParams.resetAlgo   = val;*/ paramMap[configParams::paramRESET_ALGO] = val;  break;
-            default:
-              break;
-          }
-        }
-      }
-    }
-
     dwContextHandle_t m_ctx      = nullptr;
     dwSALHandle_t m_sal          = nullptr;
     dwSensorHandle_t m_canSensor = nullptr;
@@ -320,9 +263,9 @@ private:
 
     IMU                             *imu;    // Pointer to IMU abstract class
     //imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
-    map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
-    vector<string>                  paramNames; // Parameter names supported by underlying IMU
-
+    //map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
+    //vector<string>                  paramNames; // Parameter names supported by underlying IMU
+    vector<dwCANMessage>            configMessages;
 };
 } // namespace imu
 } // namespace plugins

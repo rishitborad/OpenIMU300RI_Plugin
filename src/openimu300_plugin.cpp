@@ -43,7 +43,7 @@ const vector<uint8_t> validCutoffFreqs = {0,2,5,10,25,40,50};
 const vector<uint16_t> validOrientations = {0x0000, 0x0009, 0x0023, 0x002A,
                                             0x0041, 0x0048, 0x0062, 0x006B,
                                             0x0085, 0x008C, 0x0092, 0x009B};
-/*
+
 const imuParameters_t defaultParams = {
           .packetRate   = 1,
           .packetType   = 1,
@@ -53,10 +53,9 @@ const imuParameters_t defaultParams = {
           .saveConfig   = 0,
           .resetAlgo    = 0
 };
-*/
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::getPakcetIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t *ps)
+void OpenIMU300::getPacketIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t *ps)
 {
   *pf = (uint8_t)((0x00FF0000 & message_id) >> 16);
   *ps = (uint8_t)((0x0000FF00 & message_id) >> 8);
@@ -66,7 +65,7 @@ void OpenIMU300::getPakcetIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t 
 
 imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
 {
-  for(int i = 0; i < static_cast<int>(IMU300pgnList.size()); i++)
+  for(size_t i = 0; i < IMU300pgnList.size(); i++)
   {
     if((IMU300pgnList[i].type & DATA_PACKET) != 0)
     {
@@ -81,6 +80,65 @@ imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
 
 //----------------------------------------------------------------------------//
 
+bool OpenIMU300::getParameterVal(std::string searchString, std::string userString,  uint16_t* value)
+{
+  std::string param;
+  size_t pos = userString.find(searchString);
+  *value = 0;
+  if (pos != std::string::npos)
+  {
+      param   = userString.substr(pos);
+      pos     = param.find_first_of(",");
+      param   = param.substr(searchString.length(), pos);
+      int val = static_cast<uint16_t>(stoi(param));
+      // Clamp negative values to zero
+      if(val < 0)
+      {
+        val = 0;
+      }
+      *value = val;
+      return true;
+  }
+  return false;
+}
+
+//----------------------------------------------------------------------------//
+
+void OpenIMU300::getParams(std::string userString, vector<dwCANMessage> &configMessages)
+{
+  for(size_t i = 0; i < paramNames.size(); i++)
+  {
+    bool isValidParam = true;
+    uint16_t val = 0;
+    dwCANMessage message;
+    if(getParameterVal(paramNames[i], userString, &val))
+    {
+      printf("PARAM: %lu %d\r\n", i, val);
+      switch(static_cast<IMUPARAM_t>(i))
+      {
+        case IMUPARAM_t::PARAM_PACKET_RATE: imuParameter.packetRate  = val; break;
+        case IMUPARAM_t::PARAM_PACKET_TYPE: imuParameter.packetType  = val; break;
+        case IMUPARAM_t::PARAM_ORIENTATION: imuParameter.orientation = val; break;
+        case IMUPARAM_t::PARAM_RATE_LPF:    imuParameter.rateLPF     = val; break;
+        case IMUPARAM_t::PARAM_ACCEL_LPF:   imuParameter.accelLPF    = val; break;
+        case IMUPARAM_t::PARAM_SAVE_CONFIG: imuParameter.saveConfig  = val; break;
+        case IMUPARAM_t::PARAM_RESET_ALGO:  imuParameter.resetAlgo   = val; break;
+        default:
+          isValidParam = false;
+          break;
+      }
+
+      if(isValidParam)
+      {
+        getConfigPacket(static_cast<IMUPARAM_t>(i), val, &message);
+        configMessages.push_back(message);
+      }
+    }
+  }
+}
+
+//----------------------------------------------------------------------------//
+
 OpenIMU300::OpenIMU300()
 { }
 
@@ -89,6 +147,7 @@ OpenIMU300::OpenIMU300()
 OpenIMU300::OpenIMU300(uint8_t srcAddr, uint8_t destAddr)
 : SRCAddress(srcAddr)
 , ECUAddress(destAddr)
+, imuParameter(defaultParams)
 { }
 
 //----------------------------------------------------------------------------//
@@ -98,9 +157,12 @@ OpenIMU300::~OpenIMU300()
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::init(vector<string> *paramsString/*, imuParameters_t *params*/)
+void OpenIMU300::init(string paramsString, vector<dwCANMessage> &configMessages)
 {
-  for(int i = 0; i < (int)IMU300pgnList.size(); i++)
+
+  getParams(paramsString, configMessages);
+
+  for(size_t i = 0; i < IMU300pgnList.size(); i++)
   {
     auto idx = PGNMap.find(IMU300pgnList[i].PF);
     if(idx != PGNMap.end())
@@ -112,10 +174,7 @@ void OpenIMU300::init(vector<string> *paramsString/*, imuParameters_t *params*/)
     }
   }
 
-  *paramsString = paramNames;
-  //*params = defaultParams;
-
-  #if 0
+#if 0
   for(auto i = PGNMap.begin(); i != PGNMap.end(); i++)
   {
     printf("PF: %d", i->first);
@@ -125,7 +184,7 @@ void OpenIMU300::init(vector<string> *paramsString/*, imuParameters_t *params*/)
     }
     printf("\r\n");
   }
-  #endif
+#endif
 }
 
 //----------------------------------------------------------------------------//
@@ -139,7 +198,7 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
 
   uint8_t pf = 0, ps = 0;
 
-  getPakcetIdentifiers(message_id, &pf, &ps);
+  getPacketIdentifiers(message_id, &pf, &ps);
 
   auto map_itr = PGNMap.find(pf);
   if(map_itr == PGNMap.end())             // PF key not available?
@@ -154,11 +213,11 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
 
 //----------------------------------------------------------------------------//
 
-bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet)
+bool OpenIMU300::getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessage *packet)
 {
-  switch(static_cast<configParams>(param))
+  switch(static_cast<IMUPARAM_t>(param))
   {
-    case configParams::paramPACKET_RATE:
+    case IMUPARAM_t::PARAM_PACKET_RATE:
       {
         if(find(validPacketRates.begin(), validPacketRates.end(), paramVal) == validPacketRates.end())
         {
@@ -175,10 +234,11 @@ bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
           packet->timestamp_us = 0;
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>(paramVal & 0xFF);
+          return true;
         }
-        return true;
       }
-    case configParams::paramPACKET_TYPE:
+      break;
+    case IMUPARAM_t::PARAM_PACKET_TYPE:
       {
         if(find(validPacketTypes.begin(), validPacketTypes.end(), paramVal) == validPacketTypes.end())
         {
@@ -196,10 +256,11 @@ bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>(paramVal & 0xFF);
           packet->data[2] = 0;
+          return true;
         }
-        return true;
       }
-    case configParams::paramORIENTATION:
+      break;
+    case IMUPARAM_t::PARAM_ORIENTATION:
       {
         if(find(validOrientations.begin(), validOrientations.end(), paramVal) == validOrientations.end())
         {
@@ -218,10 +279,11 @@ bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>((paramVal & 0xFF00) >> 8);   // Orientation MSB
           packet->data[2] = static_cast<uint8_t>(paramVal & 0x00FF);          // Orientation LSB
+          return true;
         }
-        return true;
       }
-    case configParams::paramRATE_LPF:
+      break;
+    case IMUPARAM_t::PARAM_RATE_LPF:
       {
         if(find(validCutoffFreqs.begin(), validCutoffFreqs.end(), paramVal) == validCutoffFreqs.end())
         {
@@ -239,10 +301,11 @@ bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
           packet->data[0] = this->ECUAddress;
           packet->data[1] = static_cast<uint8_t>(paramVal);   // Rate LPF byte
           packet->data[2] = 0;                                // Accel LPF byte
+          return true;
         }
-        return true;
       }
-    case configParams::paramACCEL_LPF:
+      break;
+    case IMUPARAM_t::PARAM_ACCEL_LPF:
       {
         if(find(validCutoffFreqs.begin(), validCutoffFreqs.end(), paramVal) == validCutoffFreqs.end())
         {
@@ -260,53 +323,56 @@ bool OpenIMU300::getConfigPacket(configParams param, uint16_t paramVal, dwCANMes
           packet->data[0] = this->ECUAddress;
           packet->data[1] = 0;                                // Rate LPF byte
           packet->data[2] = static_cast<uint8_t>(paramVal);   // Accel LPF byte
+          return true;
         }
-        return true;
       }
-      case configParams::paramSAVE_CONFIG:
+        break;
+    case IMUPARAM_t::PARAM_SAVE_CONFIG:
+      {
+        if(paramVal != 1)
         {
-          if(paramVal != 1)
-          {
-            return false;     // paramVal is not valid
-          }
+          return false;     // paramVal is not valid
+        }
 
-          pgn info = IMU300pgnList[SAVE_CONFIGURAITON];
-          if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
-          {
-            packet->id = 0x18000000;
-            packet->id |= (info.PF << 16);
-            packet->id |= (info.PS << 8);
-            packet->id |= static_cast<uint8_t>(SRCAddress);
-            packet->size = 3;
-            packet->timestamp_us = 0;
-            packet->data[0] = 0;
-            packet->data[1] = this->ECUAddress;
-            packet->data[2] = 0;
-          }
+        pgn info = IMU300pgnList[SAVE_CONFIGURAITON];
+        if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
+        {
+          packet->id = 0x18000000;
+          packet->id |= (info.PF << 16);
+          packet->id |= (info.PS << 8);
+          packet->id |= static_cast<uint8_t>(SRCAddress);
+          packet->size = 3;
+          packet->timestamp_us = 0;
+          packet->data[0] = 0;
+          packet->data[1] = this->ECUAddress;
+          packet->data[2] = 0;
           return true;
         }
-      case configParams::paramRESET_ALGO:
+      }
+      break;
+    case IMUPARAM_t::PARAM_RESET_ALGO:
+      {
+        if(paramVal != 1)
         {
-          if(paramVal != 1)
-          {
-            return false;     // paramVal is not valid
-          }
+          return false;     // paramVal is not valid
+        }
 
-          pgn info = IMU300pgnList[RESET_ALGORITHM];
-          if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
-          {
-            packet->id = 0x18000000;
-            packet->id |= (info.PF << 16);
-            packet->id |= (info.PS << 8);
-            packet->id |= static_cast<uint8_t>(SRCAddress);
-            packet->size = 3;
-            packet->timestamp_us = 0;
-            packet->data[0] = 0;
-            packet->data[1] = this->ECUAddress;
-            packet->data[2] = 0;
-          }
+        pgn info = IMU300pgnList[RESET_ALGORITHM];
+        if((info.type & PACKET_TYPE_t::CONFIGURATION_PACKET) != 0)
+        {
+          packet->id = 0x18000000;
+          packet->id |= (info.PF << 16);
+          packet->id |= (info.PS << 8);
+          packet->id |= static_cast<uint8_t>(SRCAddress);
+          packet->size = 3;
+          packet->timestamp_us = 0;
+          packet->data[0] = 0;
+          packet->data[1] = this->ECUAddress;
+          packet->data[2] = 0;
           return true;
         }
+      }
+      break;
     default:
       break;
   }
@@ -319,7 +385,7 @@ bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
 {
   uint8_t pf = 0, ps = 0;
 
-  getPakcetIdentifiers(packet.id, &pf, &ps);
+  getPacketIdentifiers(packet.id, &pf, &ps);
 
   // TODO: Needs improvement, change from O(n) to O(1)
   imuMessages dataPacketType = findDataPacket(pf, ps);

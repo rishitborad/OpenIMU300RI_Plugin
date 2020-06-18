@@ -83,6 +83,27 @@ struct pgn{
   pgn(PACKET_TYPE_t type, uint8_t pf, uint8_t ps): type(type), PF(pf), PS(ps){}
 };
 
+typedef struct{
+  uint16_t packetRate;
+  uint16_t packetType;
+  uint16_t orientation;
+  uint16_t rateLPF;
+  uint16_t accelLPF;
+  uint8_t saveConfig;
+  uint8_t resetAlgo;
+} imuParameters_t;
+
+typedef enum{
+  PARAM_PACKET_RATE,
+  PARAM_PACKET_TYPE,
+  PARAM_ORIENTATION,
+  PARAM_RATE_LPF,
+  PARAM_ACCEL_LPF,
+  PARAM_SAVE_CONFIG,
+  PARAM_RESET_ALGO,
+  PARAM_MAX_PARAMS,
+} IMUPARAM_t;
+
 class OpenIMU300 : public IMU
 {
   public:
@@ -92,20 +113,25 @@ class OpenIMU300 : public IMU
 
     virtual ~OpenIMU300() override;
 
-    virtual void init(vector<string> *paramsString/*, imuParameters_t *params*/) override;
-
-    virtual bool getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) override;
+    virtual void init(string paramsString, vector<dwCANMessage> &configMessages) override;
 
     virtual bool isValidMessage(uint32_t message_id) override;
 
     virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) override;
 
   private:
-    void getPakcetIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
-
     imuMessages findDataPacket(uint8_t pf, uint8_t ps);
 
-    map<uint8_t,vector<uint8_t>> PGNMap;      //map<PF,Vector<PS,PS,PS>>
-    uint8_t SRCAddress;
-    uint8_t ECUAddress;
+    bool getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessage *packet);
+
+    void getPacketIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
+
+    bool getParameterVal(string searchString, string userString, uint16_t* value);
+
+    void getParams(string paramsString, vector<dwCANMessage> &configMessages);
+
+    uint8_t                       SRCAddress;
+    uint8_t                       ECUAddress;
+    imuParameters_t               imuParameter;
+    map<uint8_t,vector<uint8_t>>  PGNMap;      //map<PF,Vector<PS,PS,PS>>
 };
