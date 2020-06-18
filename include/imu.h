@@ -6,6 +6,7 @@
 #include <algorithm>
 using namespace std;
 
+/*
 typedef struct{
   uint16_t packetRate;
   uint16_t packetType;
@@ -15,7 +16,7 @@ typedef struct{
   uint8_t saveConfig;
   uint8_t resetAlgo;
 } imuParameters_t;
-
+*/
 typedef enum{
   paramPACKET_RATE    = 0,
   paramPACKET_TYPE    = 1,
@@ -34,7 +35,7 @@ class IMU
 
     virtual ~IMU(){};
 
-    virtual void init(vector<string> *paramsString, imuParameters_t *params) = 0;
+    virtual void init(vector<string> *paramsString/*, imuParameters_t *params*/) = 0;
 
     virtual bool getConfigPacket(configParams param, uint16_t paramVal, dwCANMessage *packet) = 0;
 

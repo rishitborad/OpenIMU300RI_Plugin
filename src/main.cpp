@@ -113,7 +113,7 @@ public:
         }
 
         // Initialize IMU and get list of paramater strings supported and set parameter struct to default
-        imu->init(&paramNames, &imuParams);
+        imu->init(&paramNames/*, &imuParams*/);
 
         // Find IMU supported parameters from the input parameter string
         // and create a map<parameterName,paramVal>
@@ -296,13 +296,13 @@ private:
         {
           switch(static_cast<configParams>(i))
           {
-            case configParams::paramPACKET_RATE: imuParams.packetRate  = val; paramMap[configParams::paramPACKET_RATE] = val; break;
-            case configParams::paramPACKET_TYPE: imuParams.packetType  = val; paramMap[configParams::paramPACKET_TYPE] = val; break;
-            case configParams::paramORIENTATION: imuParams.orientation = val; paramMap[configParams::paramORIENTATION] = val; break;
-            case configParams::paramRATE_LPF:    imuParams.rateLPF     = val; paramMap[configParams::paramRATE_LPF] = val;    break;
-            case configParams::paramACCEL_LPF:   imuParams.accelLPF    = val; paramMap[configParams::paramACCEL_LPF] = val;   break;
-            case configParams::paramSAVE_CONFIG: imuParams.saveConfig  = val; paramMap[configParams::paramSAVE_CONFIG] = val; break;
-            case configParams::paramRESET_ALGO:  imuParams.resetAlgo   = val; paramMap[configParams::paramRESET_ALGO] = val;  break;
+            case configParams::paramPACKET_RATE: /*imuParams.packetRate  = val;*/ paramMap[configParams::paramPACKET_RATE] = val; break;
+            case configParams::paramPACKET_TYPE: /*imuParams.packetType  = val;*/ paramMap[configParams::paramPACKET_TYPE] = val; break;
+            case configParams::paramORIENTATION: /*imuParams.orientation = val;*/ paramMap[configParams::paramORIENTATION] = val; break;
+            case configParams::paramRATE_LPF:    /*imuParams.rateLPF     = val;*/ paramMap[configParams::paramRATE_LPF] = val;    break;
+            case configParams::paramACCEL_LPF:   /*imuParams.accelLPF    = val;*/ paramMap[configParams::paramACCEL_LPF] = val;   break;
+            case configParams::paramSAVE_CONFIG: /*imuParams.saveConfig  = val;*/ paramMap[configParams::paramSAVE_CONFIG] = val; break;
+            case configParams::paramRESET_ALGO:  /*imuParams.resetAlgo   = val;*/ paramMap[configParams::paramRESET_ALGO] = val;  break;
             default:
               break;
           }
@@ -319,7 +319,7 @@ private:
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
     IMU                             *imu;    // Pointer to IMU abstract class
-    imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
+    //imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
     map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
     vector<string>                  paramNames; // Parameter names supported by underlying IMU
 

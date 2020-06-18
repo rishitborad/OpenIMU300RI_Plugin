@@ -30,13 +30,20 @@ static vector<pgn> IMU300pgnList =  {
                    };
 
 
-const vector<string> paramNames = {"packetRate=","packetType=","orientation=","rateLPF=","accelLPF=","saveConfig=","resetAlgo="};
+const vector<string> paramNames = { "packetRate=","packetType=","orientation=",
+                                    "rateLPF=","accelLPF=","saveConfig=","resetAlgo=",
+                                    "setBank0PS0","setBank0PS1","setBank0PS2","setBank0PS3",
+                                    "setBank0PS4","setBank1PS0","setBank1PS1","setBank1PS2",
+                                    "setBank1PS3","setBank1PS4","setBank1PS5","setBank1PS6",
+                                  };
 
 const vector<uint8_t> validPacketRates = {0,1,2,4,5,10,20,25,50};
 const vector<uint8_t> validPacketTypes = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
 const vector<uint8_t> validCutoffFreqs = {0,2,5,10,25,40,50};
-const vector<uint16_t> validOrientations = {0x0000, 0x0009, 0x0023, 0x002A, 0x0041, 0x0048, 0x0062, 0x006B, 0x0085, 0x008C, 0x0092, 0x009B};
-
+const vector<uint16_t> validOrientations = {0x0000, 0x0009, 0x0023, 0x002A,
+                                            0x0041, 0x0048, 0x0062, 0x006B,
+                                            0x0085, 0x008C, 0x0092, 0x009B};
+/*
 const imuParameters_t defaultParams = {
           .packetRate   = 1,
           .packetType   = 1,
@@ -46,7 +53,7 @@ const imuParameters_t defaultParams = {
           .saveConfig   = 0,
           .resetAlgo    = 0
 };
-
+*/
 //----------------------------------------------------------------------------//
 
 void OpenIMU300::getPakcetIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t *ps)
@@ -91,7 +98,7 @@ OpenIMU300::~OpenIMU300()
 
 //----------------------------------------------------------------------------//
 
-void OpenIMU300::init(vector<string> *paramsString, imuParameters_t *params)
+void OpenIMU300::init(vector<string> *paramsString/*, imuParameters_t *params*/)
 {
   for(int i = 0; i < (int)IMU300pgnList.size(); i++)
   {
@@ -106,7 +113,7 @@ void OpenIMU300::init(vector<string> *paramsString, imuParameters_t *params)
   }
 
   *paramsString = paramNames;
-  *params = defaultParams;
+  //*params = defaultParams;
 
   #if 0
   for(auto i = PGNMap.begin(); i != PGNMap.end(); i++)
