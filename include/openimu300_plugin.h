@@ -32,6 +32,30 @@ typedef enum{
   MAX_PGN,
 }imuMessages;
 
+// Note 1: Keeping the PS parameters uptop because the plugin parses user parameter
+// string in this order. Allowing to look for PS changes in user parameter
+// string and change PS values for fields before actully configuring the field.
+// Eg. User want to change the PS for Packet rate and configure the Packet rate
+// to some value, this mechanism allows to first change the PS number for
+// Packet Rate and then uses new PS number to configure the Packet Rate field.
+// Note 2: Order of this enum is important be and must match with
+// vector<string>paraNames in openIMU300_plugin.cpp
+typedef enum{
+  PARAM_RESET_ALGO_PS,
+  PARAM_SET_PACKET_RATE_PS,
+  PARAM_SET_PACKET_TYPE_PS,
+  PARAM_SET_FILTER_CUTOFF_PS,
+  PARAM_SET_ORIENTATION_PS,
+  PARAM_PACKET_RATE,
+  PARAM_PACKET_TYPE,
+  PARAM_ORIENTATION,
+  PARAM_RATE_LPF,
+  PARAM_ACCEL_LPF,
+  PARAM_RESET_ALGO,
+  //Add New Params here
+  PARAM_MAX_PARAMS,
+} IMUPARAM_t;
+
 // angular rate data payload format
 typedef struct {
     uint16_t roll_rate;                             // roll  rate
@@ -89,20 +113,8 @@ typedef struct{
   uint16_t orientation;
   uint16_t rateLPF;
   uint16_t accelLPF;
-  uint8_t saveConfig;
   uint8_t resetAlgo;
 } imuParameters_t;
-
-typedef enum{
-  PARAM_PACKET_RATE,
-  PARAM_PACKET_TYPE,
-  PARAM_ORIENTATION,
-  PARAM_RATE_LPF,
-  PARAM_ACCEL_LPF,
-  PARAM_SAVE_CONFIG,
-  PARAM_RESET_ALGO,
-  PARAM_MAX_PARAMS,
-} IMUPARAM_t;
 
 class OpenIMU300 : public IMU
 {
@@ -122,6 +134,8 @@ class OpenIMU300 : public IMU
   private:
     imuMessages findDataPacket(uint8_t pf, uint8_t ps);
 
+    void getBankOfPSPacket(uint8_t bank, uint8_t *reg, dwCANMessage *packet);
+
     bool getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessage *packet);
 
     void getPacketIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
@@ -129,6 +143,8 @@ class OpenIMU300 : public IMU
     bool getParameterVal(string searchString, string userString, uint16_t* value);
 
     void getParams(string paramsString, vector<dwCANMessage> &configMessages);
+
+    void printPSList();
 
     uint8_t                       SRCAddress;
     uint8_t                       ECUAddress;

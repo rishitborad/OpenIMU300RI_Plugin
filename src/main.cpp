@@ -138,8 +138,9 @@ public:
           // the IMU to configure according to the plugin user request
           for(size_t i = 0; i < configMessages.size(); i++)
           {
-            if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
-              return status;
+            printf("configMessages[%lu].id = %X, %X %X %X %X %X %X %X %X\r\n", i, configMessages[i].id, configMessages[i].data[0], configMessages[i].data[1], configMessages[i].data[2], configMessages[i].data[3], configMessages[i].data[4], configMessages[i].data[5], configMessages[i].data[6], configMessages[i].data[7]);
+            //if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
+              //return status;
           }
         }
         return DW_SUCCESS;
@@ -240,7 +241,7 @@ public:
           m_buffer.dequeue();
           return DW_FAILURE;
         }
-        
+
         m_buffer.dequeue();
         return DW_SUCCESS;
     }
@@ -261,11 +262,8 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    IMU                             *imu;    // Pointer to IMU abstract class
-    //imuParameters_t                 imuParams;  // Parameter struct for the IMU, set to default by imu->Init()
-    //map<configParams, uint16_t>     paramMap;   // Contrains only non default parameter and value pair
-    //vector<string>                  paramNames; // Parameter names supported by underlying IMU
-    vector<dwCANMessage>            configMessages;
+    IMU                   *imu;    // Pointer to IMU abstract class
+    vector<dwCANMessage>  configMessages;
 };
 } // namespace imu
 } // namespace plugins
