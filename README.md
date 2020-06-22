@@ -18,19 +18,19 @@ example usage:
 
 Parameter Table
 
-|Parameter Name         |Description                                 |Valid values (Decimal only)
-------------------------------------------------------------------------------------------------
-|packetRate=            |Packet Rate                                 |0,1,2,4,5,10,20,25,50
-|packetType=            |Packet Type                                 |0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15
-|orientation=            |Orientation                                 |0x0000, 0x0009, 0x0023, 0x002A,0x0041, 0x0048, 0x0062, 0x006B,0x0085, 0x008C, 0x0092, 0x009B
-|rateLPF=                |Rate Sensor Cutoff Frequency                |0,2,5,10,25,40,50
-|accelLPF=               |Accel Sensor Cutoff Frequency               |0,2,5,10,25,40,50
-|resetAlgo=              |Reset Algorithm                             |1
-|resetAlgoPS=            |Bank of PS for Reset Algorithm              |Range[0x40,0x80)
-|setPacketRatePS=        |Bank of PS for Packet Rate                  |Range[0x40,0x80)
-|setPacketTypePS=        |Bank of PS for Packet Type                  |Range[0x40,0x80)
-|setFilterCutoffPS=      |Bank of PS for Digital Filter Cutoff Freq   |Range[0x40,0x80)
-|setOrientationPS=       |Bank of PS for Orientation                  |Range[0x40,0x80)
+|Parameter Name         |Description                                 |Valid values (Decimal only) |
+|-----------------------|--------------------------------------------|----------------------------|
+|`packetRate=`          |Packet Rate                                 |0,1,2,4,5,10,20,25,50|
+|`packetType=`          |Packet Type                                 |0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15|
+|`orientation=`         |Orientation                                |0x0000, 0x0009, 0x0023, 0x002A,0x0041, 0x0048, 0x0062, 0x006B,0x0085, 0x008C, 0x0092, 0x009B|
+|`rateLPF=`             |Rate Sensor Cutoff Frequency                |0,2,5,10,25,40,50|
+|`accelLPF=`            |Accel Sensor Cutoff Frequency               |0,2,5,10,25,40,50|
+|`resetAlgo=`           |Reset Algorithm                             |1|
+|`resetAlgoPS=`         |Bank of PS for Reset Algorithm              |Range[0x40,0x80)|
+|`setPacketRatePS=`     |Bank of PS for Packet Rate                  |Range[0x40,0x80)|
+|`setPacketTypePS=`     |Bank of PS for Packet Type                  |Range[0x40,0x80)|
+|`setFilterCutoffPS=`   |Bank of PS for Digital Filter Cutoff Freq   |Range[0x40,0x80)|
+|`setOrientationPS=`    |Bank of PS for Orientation                  |Range[0x40,0x80)|
 
 
 Note: Detailed information on each valid values can be found at https://openimu.readthedocs.io/en/latest/software/CAN/CAN_J1939_CAN_Messages.html
