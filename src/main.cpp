@@ -113,7 +113,10 @@ public:
         }
 
         // Initialize IMU and get list of paramater strings supported and set parameter struct to default
-        imu->init(paramsString, configMessages);
+        if(!imu->init(paramsString, configMessages))
+        {
+          return DW_FAILURE;
+        }
 
         for(size_t i = 0; i < configMessages.size(); i++)
         {
@@ -139,8 +142,8 @@ public:
           for(size_t i = 0; i < configMessages.size(); i++)
           {
             printf("configMessages[%lu].id = %X, %X %X %X %X %X %X %X %X\r\n", i, configMessages[i].id, configMessages[i].data[0], configMessages[i].data[1], configMessages[i].data[2], configMessages[i].data[3], configMessages[i].data[4], configMessages[i].data[5], configMessages[i].data[6], configMessages[i].data[7]);
-            //if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
-              //return status;
+            if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
+              return DW_FAILURE;
           }
         }
         return DW_SUCCESS;

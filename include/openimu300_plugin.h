@@ -125,7 +125,7 @@ class OpenIMU300 : public IMU
 
     virtual ~OpenIMU300() override;
 
-    virtual void init(string paramsString, vector<dwCANMessage> &configMessages) override;
+    virtual bool init(string paramsString, vector<dwCANMessage> &configMessages) override;
 
     virtual bool isValidMessage(uint32_t message_id) override;
 
@@ -136,13 +136,18 @@ class OpenIMU300 : public IMU
 
     void getBankOfPSPacket(uint8_t bank, uint8_t *reg, dwCANMessage *packet);
 
-    bool getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessage *packet);
+    void getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessage *packet);
 
     void getPacketIdentifiers(uint32_t id, uint8_t *pf, uint8_t *ps);
 
     bool getParameterVal(string searchString, string userString, uint16_t* value);
 
-    void getParams(string paramsString, vector<dwCANMessage> &configMessages);
+    bool getParams(string paramsString, vector<dwCANMessage> &configMessages);
+
+    bool isValidBankOfPSPacket(uint16_t value);
+
+    template<typename T>
+    bool isValidConfigRequest(const std::vector<T> validValues, const T value);
 
     void printPSList();
 

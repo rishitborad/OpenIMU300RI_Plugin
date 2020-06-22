@@ -12,7 +12,7 @@ class IMU
 
     virtual ~IMU(){};
 
-    virtual void init(string paramsString, std::vector<dwCANMessage> & configMessages) = 0;
+    virtual bool init(string paramsString, std::vector<dwCANMessage> & configMessages) = 0;
 
     virtual bool isValidMessage(uint32_t message_id) = 0;
 
