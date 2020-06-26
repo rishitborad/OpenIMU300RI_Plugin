@@ -354,6 +354,25 @@ bool OpenIMU300::init(string paramsString, vector<dwCANMessage> &configMessages)
 
 //----------------------------------------------------------------------------//
 
+void OpenIMU300::getSensorResetMessage(dwCANMessage *packet)
+{
+  if(packet == nullptr)
+    return;
+
+  pgn info = IMU300pgnList[SAVE_CONFIGURAITON];
+  packet->id = 0x18000000;
+  packet->id |= (info.PF << 16);
+  packet->id |= (info.PS << 8);
+  packet->id |= static_cast<uint8_t>(SRCAddress);
+  packet->size = 3;
+  packet->data[0] = 2;
+  packet->data[1] = 80;
+  packet->data[2] = 0;
+  packet->timestamp_us = 0;
+}
+
+//----------------------------------------------------------------------------//
+
 bool OpenIMU300::isValidMessage(uint32_t message_id)
 {
   if((message_id & 0x000000FF) != 0x00000080)

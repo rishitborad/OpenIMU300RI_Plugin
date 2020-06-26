@@ -131,6 +131,8 @@ class OpenIMU300 : public IMU
 
     virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) override;
 
+    virtual void getSensorResetMessage(dwCANMessage *packet) override;
+
   private:
     imuMessages findDataPacket(uint8_t pf, uint8_t ps);
 

@@ -35,6 +35,7 @@
 #include <iostream>
 #include <openimu300_plugin.h>
 #include <map>
+#include <unistd.h>
 using namespace std;
 namespace dw
 {
@@ -135,6 +136,14 @@ public:
 
           if(status != DW_SUCCESS)
             return status;
+
+          dwCANMessage resetMessage;
+          imu->getSensorResetMessage(&resetMessage);
+          if(dwSensorCAN_sendMessage(&resetMessage, 100000, m_canSensor) != DW_SUCCESS){
+            return DW_FAILURE;
+          }
+          printf("restarting IMU\r\n");
+          sleep(10);
 
           // Configure IMU to parameters received in parameter string
           // for each paramater in map<parameterName,paramVal> send a message to

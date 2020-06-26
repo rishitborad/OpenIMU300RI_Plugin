@@ -18,5 +18,7 @@ class IMU
 
     virtual bool parseDataPacket(dwCANMessage packet, dwIMUFrame *IMUframe) = 0;
 
+    virtual void getSensorResetMessage(dwCANMessage *packet) = 0;
+
   private:
 };
