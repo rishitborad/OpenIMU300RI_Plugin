@@ -119,7 +119,7 @@ public:
           return DW_FAILURE;
         }
 
-#if 1
+#if 0
         printf("Number of Config Messages %u \r\n", configCount);
         for(size_t i = 0; i < configCount; i++)
         {
@@ -209,7 +209,6 @@ public:
         {
           if(imu->isValidMessage(result->id))
           {
-            printf("Valid\r\n");
             break;
           }
         }

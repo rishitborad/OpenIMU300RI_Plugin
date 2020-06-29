@@ -176,7 +176,6 @@ bool OpenIMU300::getParams(std::string userString, dwCANMessage **messages , uin
           break;
         case IMUPARAM_t::PARAM_PACKET_TYPE:
             if(!isValidConfigRequest(static_cast<uint8_t>(val & 0xFF), validPacketTypes, VALID_PACKET_TYPES)){
-              printf("NotValid\r\n");
               return false;
             }
             imuParameter.packetType  = val;
@@ -268,7 +267,7 @@ bool OpenIMU300::getParams(std::string userString, dwCANMessage **messages , uin
         {
           getBankOfPSPacket(0, bankOfPS[0], &configMessages[configCount++]);
         }
-        
+
         if(updateBankOfPS[1])
         {
           getBankOfPSPacket(1, bankOfPS[1], &configMessages[configCount++]);
@@ -284,10 +283,8 @@ bool OpenIMU300::getParams(std::string userString, dwCANMessage **messages , uin
     }
   }
 
-  printf("CONFIGCOUNT:%d\r\n",configCount);
   *messages = configMessages;
   *count = configCount;
-  printf("Count:%X\r\n", *count);
   return true;
 }
 
@@ -342,10 +339,6 @@ OpenIMU300::~OpenIMU300()
 bool OpenIMU300::init(string paramsString, dwCANMessage **messages, uint8_t *count)
 {
   bool status = getParams(paramsString, messages, count);
-  if(!status) printf("Get params is failing\r\n");
-  if(messages == nullptr)
-    printf("nullptr\r\n");
-  //printf("ID:%X\r\n", messages->id);
 
   for(size_t i = 0; i < IMU300pgnList.size(); i++)
   {
