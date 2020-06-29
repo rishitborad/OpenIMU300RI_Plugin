@@ -34,7 +34,6 @@
 #include <ByteQueue.hpp>
 #include <iostream>
 #include <openimu300_plugin.h>
-#include <map>
 #include <unistd.h>
 using namespace std;
 namespace dw
@@ -76,6 +75,7 @@ public:
         , m_buffer(sizeof(dwCANMessage))
         , m_slot(slotSize)
         , imu(&instance)
+        , configMessages(nullptr)
     {
     }
 
@@ -114,16 +114,18 @@ public:
         }
 
         // Initialize IMU and get list of paramater strings supported and set parameter struct to default
-        if(!imu->init(paramsString, configMessages))
+        if(!imu->init(paramsString, &configMessages, &configCount))
         {
           return DW_FAILURE;
         }
 
-        for(size_t i = 0; i < configMessages.size(); i++)
+#if 1
+        printf("Number of Config Messages %u \r\n", configCount);
+        for(size_t i = 0; i < configCount; i++)
         {
           printf("configMessages[%lu].id = %X\r\n", i, configMessages[i].id);
         }
-
+#endif
         return DW_SUCCESS;
     }
 
@@ -136,6 +138,13 @@ public:
 
           if(status != DW_SUCCESS)
             return status;
+          /*
+          // Read & ingonre residual messages from preious run, if any.
+          dwCANMessage ignore;
+          while (dwSensorCAN_readMessage(&ignore, 10000, m_canSensor) == DW_SUCCESS)
+          {
+            printf("Reading residual \r\n");
+          }
 
           dwCANMessage resetMessage;
           imu->getSensorResetMessage(&resetMessage);
@@ -143,16 +152,18 @@ public:
             return DW_FAILURE;
           }
           printf("restarting IMU\r\n");
-          sleep(10);
+          sleep(2);
+          */
 
-          // Configure IMU to parameters received in parameter string
-          // for each paramater in map<parameterName,paramVal> send a message to
-          // the IMU to configure according to the plugin user request
-          for(size_t i = 0; i < configMessages.size(); i++)
+          if(configMessages != nullptr)
           {
-            printf("configMessages[%lu].id = %X, %X %X %X %X %X %X %X %X\r\n", i, configMessages[i].id, configMessages[i].data[0], configMessages[i].data[1], configMessages[i].data[2], configMessages[i].data[3], configMessages[i].data[4], configMessages[i].data[5], configMessages[i].data[6], configMessages[i].data[7]);
-            if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
-              return DW_FAILURE;
+            // Send Configuration messages to IMU
+            for(size_t i = 0; i < configCount; i++)
+            {
+              printf("configMessages[%lu].id = %X, %X %X %X %X %X %X %X %X\r\n", i, configMessages[i].id, configMessages[i].data[0], configMessages[i].data[1], configMessages[i].data[2], configMessages[i].data[3], configMessages[i].data[4], configMessages[i].data[5], configMessages[i].data[6], configMessages[i].data[7]);
+              if(dwSensorCAN_sendMessage(&configMessages[i], 100000, m_canSensor) != DW_SUCCESS)
+                return DW_FAILURE;
+            }
           }
         }
         return DW_SUCCESS;
@@ -198,6 +209,7 @@ public:
         {
           if(imu->isValidMessage(result->id))
           {
+            printf("Valid\r\n");
             break;
           }
         }
@@ -274,8 +286,10 @@ private:
     dw::plugin::common::ByteQueue m_buffer;
     dw::plugins::common::BufferPool<dwCANMessage> m_slot;
 
-    IMU                   *imu;    // Pointer to IMU abstract class
-    vector<dwCANMessage>  configMessages;
+    IMU                   *imu;             // Pointer to IMU abstract class
+    dwCANMessage          *configMessages;  // Pointer to IMU configuration messages
+    uint8_t               configCount;     // Number of configuration messages from the IMU
+
 };
 } // namespace imu
 } // namespace plugins

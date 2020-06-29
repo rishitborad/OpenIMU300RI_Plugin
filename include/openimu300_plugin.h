@@ -1,4 +1,5 @@
 #include <imu.h>
+#include <map>
 using namespace std;
 
 typedef enum{
@@ -46,6 +47,7 @@ typedef enum{
   PARAM_SET_PACKET_TYPE_PS,
   PARAM_SET_FILTER_CUTOFF_PS,
   PARAM_SET_ORIENTATION_PS,
+  //Add New BankOfPS parameter here
   PARAM_PACKET_RATE,
   PARAM_PACKET_TYPE,
   PARAM_ORIENTATION,
@@ -125,7 +127,7 @@ class OpenIMU300 : public IMU
 
     virtual ~OpenIMU300() override;
 
-    virtual bool init(string paramsString, vector<dwCANMessage> &configMessages) override;
+    virtual bool init(string paramsString, dwCANMessage **messages, uint8_t *count) override;
 
     virtual bool isValidMessage(uint32_t message_id) override;
 
@@ -144,12 +146,12 @@ class OpenIMU300 : public IMU
 
     bool getParameterVal(string searchString, string userString, uint16_t* value);
 
-    bool getParams(string paramsString, vector<dwCANMessage> &configMessages);
+    bool getParams(std::string userString, dwCANMessage **messages, uint8_t *count);
 
     bool isValidBankOfPSPacket(uint16_t value);
 
     template<typename T>
-    bool isValidConfigRequest(const std::vector<T> validValues, const T value);
+    bool isValidConfigRequest(const T value, const T* validValues, const uint8_t len);
 
     void printPSList();
 
@@ -157,4 +159,6 @@ class OpenIMU300 : public IMU
     uint8_t                       ECUAddress;
     imuParameters_t               imuParameter;
     map<uint8_t,vector<uint8_t>>  PGNMap;      //map<PF,Vector<PS,PS,PS>>
+    dwCANMessage                  configMessages[PARAM_MAX_PARAMS];
+    uint8_t                       configCount;
 };

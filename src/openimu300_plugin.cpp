@@ -1,5 +1,4 @@
 #include <openimu300_plugin.h>
-
 // TODO (06/10/2020):
 // 1. Support for hex and decimal both for parameter values
 // 2. Set Bank of PS number configuration not supported
@@ -8,6 +7,14 @@
 // 5. Units for each IMUFrame needs to be verified atleast once
 // 6. Add const keyword as much as possible
 // 7. Restructoring (Open to extension close to modification)
+
+
+#define VALID_PACKET_RATES    9
+#define VALID_PACKET_TYPES    16
+#define VALID_CUTOFF_FREQS    7
+#define VALID_ORIENTATIONS    12
+#define BANK_OF_PS_VAL_LOWER  0x40
+#define BANK_OF_PS_VAL_UPPER  0x7F
 
 
 // Note1: Order of this struct initializer must match with enum imuMessages
@@ -32,18 +39,18 @@ static vector<pgn> IMU300pgnList =  {
                    };
 
 
-const vector<string> paramNames = { "resetAlgoPS=",       "setPacketRatePS=",   "setPacketTypePS=",
-                                    "setFilterCutoffPS=", "setOrientationPS=",  "packetRate=",
-                                    "packetType=",        "orientation=",       "rateLPF=",
-                                    "accelLPF=",          "resetAlgo=",
+const string paramNames[] = { "resetAlgoPS=",       "setPacketRatePS=",   "setPacketTypePS=",
+                              "setFilterCutoffPS=", "setOrientationPS=",  "packetRate=",
+                              "packetType=",        "orientation=",       "rateLPF=",
+                              "accelLPF=",          "resetAlgo=",
                                   };
 
-const vector<uint8_t> validPacketRates = {0,1,2,4,5,10,20,25,50};
-const vector<uint8_t> validPacketTypes = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
-const vector<uint8_t> validCutoffFreqs = {0,2,5,10,25,40,50};
-const vector<uint16_t> validOrientations = {0x0000, 0x0009, 0x0023, 0x002A,
-                                            0x0041, 0x0048, 0x0062, 0x006B,
-                                            0x0085, 0x008C, 0x0092, 0x009B};
+const uint8_t validPacketRates[VALID_PACKET_RATES] = {0,1,2,4,5,10,20,25,50};
+const uint8_t validPacketTypes[VALID_PACKET_TYPES] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15};
+const uint8_t validCutoffFreqs[VALID_CUTOFF_FREQS] = {0,2,5,10,25,40,50};
+const uint16_t validOrientations[VALID_ORIENTATIONS] = {0x0000, 0x0009, 0x0023, 0x002A,
+                                                      0x0041, 0x0048, 0x0062, 0x006B,
+                                                      0x0085, 0x008C, 0x0092, 0x009B};
 
 const imuParameters_t defaultParams = {
           .packetRate   = 1,
@@ -59,7 +66,7 @@ const imuParameters_t defaultParams = {
 // Bank of PS number has to be within [0x40,0x80)
 bool OpenIMU300::isValidBankOfPSPacket(uint16_t value)
 {
-  if(!(0x40 <= (value & 0xFF) && (value & 0xFF) < 0x80)) {
+  if(!(BANK_OF_PS_VAL_LOWER <= (value & 0xFF) && (value & 0xFF) <= BANK_OF_PS_VAL_UPPER)) {
     return false;
   }
   return true;
@@ -67,13 +74,14 @@ bool OpenIMU300::isValidBankOfPSPacket(uint16_t value)
 
 //----------------------------------------------------------------------------//
 template <typename T>
-bool OpenIMU300::isValidConfigRequest(const vector<T> validValues, const T value)
+bool OpenIMU300::isValidConfigRequest(const T value, const T* validValues, const uint8_t len)
 {
-  if(find(validValues.begin(), validValues.end(), value) == validValues.end())
+  for(size_t i = 0; i < len; i++)
   {
-    return false;     // paramVal is not valid
+      if(value == validValues[i])
+        return true;
   }
-  return true;
+  return false;
 }
 
 //----------------------------------------------------------------------------//
@@ -141,50 +149,52 @@ bool OpenIMU300::getParameterVal(std::string searchString, std::string userStrin
 
 //----------------------------------------------------------------------------//
 
-bool OpenIMU300::getParams(std::string userString, vector<dwCANMessage> &configMessages)
+bool OpenIMU300::getParams(std::string userString, dwCANMessage **messages , uint8_t *count)
 {
+  bool once = true;
   uint8_t bankOfPS[2][8] = {};
   bool updateBankOfPS[2] = {false,false};
 
   bankOfPS[0][0] = ECUAddress;
   bankOfPS[1][0] = ECUAddress;
 
-  for(size_t i = 0; i < paramNames.size(); i++)
+  memset(this->configMessages, 0, sizeof(this->configMessages));
+
+  for(size_t i = 0; i < sizeof(paramNames)/sizeof(paramNames[0]); i++)
   {
     uint16_t val = 0;
-    dwCANMessage message;
-    memset(&message,0,sizeof(message));
 
     if(getParameterVal(paramNames[i], userString, &val))
     {
       switch(static_cast<IMUPARAM_t>(i))
       {
         case IMUPARAM_t::PARAM_PACKET_RATE:
-            if(!isValidConfigRequest(validPacketRates, static_cast<uint8_t>(val & 0xFF))){
+            if(!isValidConfigRequest(static_cast<uint8_t>(val & 0xFF), validPacketRates, VALID_PACKET_RATES)){
               return false;
             }
             imuParameter.packetRate  = val;
           break;
         case IMUPARAM_t::PARAM_PACKET_TYPE:
-            if(!isValidConfigRequest(validPacketTypes, static_cast<uint8_t>(val & 0xFF))){
+            if(!isValidConfigRequest(static_cast<uint8_t>(val & 0xFF), validPacketTypes, VALID_PACKET_TYPES)){
+              printf("NotValid\r\n");
               return false;
             }
             imuParameter.packetType  = val;
           break;
         case IMUPARAM_t::PARAM_ORIENTATION:
-            if(!isValidConfigRequest(validOrientations, val)){
+            if(!isValidConfigRequest(val, validOrientations, VALID_ORIENTATIONS)){
               return false;
             }
             imuParameter.orientation = val;
           break;
         case IMUPARAM_t::PARAM_RATE_LPF:
-            if(!isValidConfigRequest(validCutoffFreqs, static_cast<uint8_t>(val & 0xFF))){
+            if(!isValidConfigRequest(static_cast<uint8_t>(val & 0xFF), validCutoffFreqs, VALID_CUTOFF_FREQS)){
               return false;
             }
             imuParameter.rateLPF = val;
           break;
         case IMUPARAM_t::PARAM_ACCEL_LPF:
-            if(!isValidConfigRequest(validCutoffFreqs, static_cast<uint8_t>(val & 0xFF))){
+            if(!isValidConfigRequest(static_cast<uint8_t>(val & 0xFF), validCutoffFreqs, VALID_CUTOFF_FREQS)){
               return false;
             }
             imuParameter.accelLPF = val;
@@ -246,32 +256,38 @@ bool OpenIMU300::getParams(std::string userString, vector<dwCANMessage> &configM
           return false;
       }
 
+      // Take care of BankofPS requests here
+      // Once last available BankOfPS parameter is checkd, prepare message and add to configMessages
+      // Insert them in before other ConfigMessages in the configMessages[] so that
+      // Plugin send PS configuration first and then other configuration
+      // requests to the IMU
+      if(static_cast<IMUPARAM_t>(i) > IMUPARAM_t::PARAM_SET_ORIENTATION_PS && once)
+      {
+        once  = false;
+        if(updateBankOfPS[0])
+        {
+          getBankOfPSPacket(0, bankOfPS[0], &configMessages[configCount++]);
+        }
+        
+        if(updateBankOfPS[1])
+        {
+          getBankOfPSPacket(1, bankOfPS[1], &configMessages[configCount++]);
+        }
+      }
+
       // Preapare dwCANMessage for all the configuration requests except BankofPS requests.
       if(static_cast<IMUPARAM_t>(i) >= IMUPARAM_t::PARAM_PACKET_RATE)
       {
-        getConfigPacket(static_cast<IMUPARAM_t>(i), val, &message);
-        configMessages.push_back(message);
+        getConfigPacket(static_cast<IMUPARAM_t>(i), val, &configMessages[configCount++]);
+        //configMessages.push_back(message);
       }
     }
   }
 
-  dwCANMessage message;
-  // Take care of BankofPS requests here
-  // Insert them in before other ConfigMessages in the vector<configMessages> so that
-  // Plugin send PS configuration first and then other configuration
-  // requests to the IMU
-  if(updateBankOfPS[0])
-  {
-    getBankOfPSPacket(0, bankOfPS[0], &message);
-    configMessages.insert(configMessages.begin(), message);
-  }
-
-  if(updateBankOfPS[1])
-  {
-    getBankOfPSPacket(1, bankOfPS[1], &message);
-    configMessages.insert(configMessages.begin(), message);
-  }
-
+  printf("CONFIGCOUNT:%d\r\n",configCount);
+  *messages = configMessages;
+  *count = configCount;
+  printf("Count:%X\r\n", *count);
   return true;
 }
 
@@ -301,6 +317,10 @@ void OpenIMU300::printPSList()
 //----------------------------------------------------------------------------//
 
 OpenIMU300::OpenIMU300()
+: SRCAddress(0x00)
+, ECUAddress(0x80)
+, imuParameter(defaultParams)
+, configCount(0)
 { }
 
 //----------------------------------------------------------------------------//
@@ -309,7 +329,8 @@ OpenIMU300::OpenIMU300(uint8_t srcAddr, uint8_t destAddr)
 : SRCAddress(srcAddr)
 , ECUAddress(destAddr)
 , imuParameter(defaultParams)
-{ }
+, configCount(0)
+{}
 
 //----------------------------------------------------------------------------//
 
@@ -318,10 +339,13 @@ OpenIMU300::~OpenIMU300()
 
 //----------------------------------------------------------------------------//
 
-bool OpenIMU300::init(string paramsString, vector<dwCANMessage> &configMessages)
+bool OpenIMU300::init(string paramsString, dwCANMessage **messages, uint8_t *count)
 {
-
-  bool status = getParams(paramsString, configMessages);
+  bool status = getParams(paramsString, messages, count);
+  if(!status) printf("Get params is failing\r\n");
+  if(messages == nullptr)
+    printf("nullptr\r\n");
+  //printf("ID:%X\r\n", messages->id);
 
   for(size_t i = 0; i < IMU300pgnList.size(); i++)
   {
@@ -335,7 +359,7 @@ bool OpenIMU300::init(string paramsString, vector<dwCANMessage> &configMessages)
     }
   }
 
-  printPSList();
+  //printPSList();
 
 #if 0
   for(auto i = PGNMap.begin(); i != PGNMap.end(); i++)
