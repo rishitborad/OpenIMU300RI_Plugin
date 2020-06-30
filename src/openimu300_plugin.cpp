@@ -18,7 +18,7 @@
 
 
 // Note1: Order of this struct initializer must match with enum imuMessages
-static vector<pgn> IMU300pgnList =  {
+static pgn IMU300pgnList[] =  {
                      {.type = REQUEST_PACKET,         .PF = 234, .PS = 255}   //GET_PACKET
                     ,{.type = REQUEST_PACKET,         .PF = 253, .PS = 197}   //ECU_ID
                     ,{.type = REQUEST_PACKET,         .PF = 254, .PS = 218}   //SOFTWARE_VER
@@ -115,7 +115,7 @@ void OpenIMU300::getPacketIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t 
 
 imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
 {
-  for(size_t i = 0; i < IMU300pgnList.size(); i++)
+  for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
   {
     if((IMU300pgnList[i].type & DATA_PACKET) != 0)
     {
@@ -340,7 +340,7 @@ bool OpenIMU300::init(string paramsString, dwCANMessage **messages, uint8_t *cou
 {
   bool status = getParams(paramsString, messages, count);
 
-  for(size_t i = 0; i < IMU300pgnList.size(); i++)
+  for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
   {
     auto idx = PGNMap.find(IMU300pgnList[i].PF);
     if(idx != PGNMap.end())
