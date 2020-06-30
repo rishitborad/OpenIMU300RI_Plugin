@@ -1,7 +1,6 @@
 #include <iostream>
 #include <dw/sensors/canbus/CAN.h>
 #include <dw/sensors/imu/IMU.h>
-#include <vector>
 #include <algorithm>
 using namespace std;
 

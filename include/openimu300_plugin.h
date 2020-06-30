@@ -1,5 +1,4 @@
 #include <imu.h>
-#include <map>
 using namespace std;
 
 typedef enum{
@@ -40,7 +39,7 @@ typedef enum{
 // to some value, this mechanism allows to first change the PS number for
 // Packet Rate and then uses new PS number to configure the Packet Rate field.
 // Note 2: Order of this enum is important be and must match with
-// vector<string>paraNames in openIMU300_plugin.cpp
+// string paramNames[] in openIMU300_plugin.cpp
 typedef enum{
   PARAM_RESET_ALGO_PS,
   PARAM_SET_PACKET_RATE_PS,
@@ -158,7 +157,6 @@ class OpenIMU300 : public IMU
     uint8_t                       SRCAddress;
     uint8_t                       ECUAddress;
     imuParameters_t               imuParameter;
-    map<uint8_t,vector<uint8_t>>  PGNMap;      //map<PF,Vector<PS,PS,PS>>
     dwCANMessage                  configMessages[PARAM_MAX_PARAMS];
     uint8_t                       configCount;
 };
