@@ -340,31 +340,7 @@ bool OpenIMU300::init(string paramsString, dwCANMessage **messages, uint8_t *cou
 {
   bool status = getParams(paramsString, messages, count);
 
-  for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
-  {
-    auto idx = PGNMap.find(IMU300pgnList[i].PF);
-    if(idx != PGNMap.end())
-    {
-      idx->second.push_back(IMU300pgnList[i].PS);
-    }
-    else{
-      PGNMap.insert({IMU300pgnList[i].PF, std::vector<uint8_t>{IMU300pgnList[i].PS}});
-    }
-  }
-
   //printPSList();
-
-#if 0
-  for(auto i = PGNMap.begin(); i != PGNMap.end(); i++)
-  {
-    printf("PF: %d", i->first);
-    for(int j = 0; j < (int)i->second.size(); j++)
-    {
-      printf(" %d", i->second[j]);
-    }
-    printf("\r\n");
-  }
-#endif
 
   return status;
 }
@@ -401,15 +377,14 @@ bool OpenIMU300::isValidMessage(uint32_t message_id)
 
   getPacketIdentifiers(message_id, &pf, &ps);
 
-  auto map_itr = PGNMap.find(pf);
-  if(map_itr == PGNMap.end())             // PF key not available?
-    return false;
-
-  auto vec_itr = find(map_itr->second.begin(), map_itr->second.end(), ps);
-  if(vec_itr == map_itr->second.end())
-    return false;
-
-  return true;
+  for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
+  {
+    if(pf == IMU300pgnList[i].PF && ps == IMU300pgnList[i].PS)
+    {
+      return true;
+    }
+  }
+  return false;
 }
 
 //----------------------------------------------------------------------------//
