@@ -50,7 +50,10 @@ const uint8_t validPacketTypes[VALID_PACKET_TYPES] = {0,1,2,3,4,5,6,7,8,9,10,11,
 const uint8_t validCutoffFreqs[VALID_CUTOFF_FREQS] = {0,2,5,10,25,40,50};
 const uint16_t validOrientations[VALID_ORIENTATIONS] = {0x0000, 0x0009, 0x0023, 0x002A,
                                                       0x0041, 0x0048, 0x0062, 0x006B,
-                                                      0x0085, 0x008C, 0x0092, 0x009B};
+                                                      0x0085, 0x008C, 0x0092, 0x009B
+                                                      0x00C4, 0x00CD, 0x00D3, 0x00DA
+                                                      0x0111, 0x0118, 0x0124, 0x012D
+                                                      0x0150, 0x0159, 0x0165, 0x016C};
 
 const imuParameters_t defaultParams = {
           .packetRate   = 1,
