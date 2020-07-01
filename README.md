@@ -20,7 +20,7 @@ Parameter Table
 |-----------------------|--------------------------------------------|----------------------------|
 |`packetRate=`          |Packet Rate                                 |0,1,2,4,5,10,20,25,50|
 |`packetType=`          |Packet Type                                 |0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15|
-|`orientation=`         |Orientation                                 |0x0000, 0x0009, 0x0023, 0x002A,0x0041, 0x0048, 0x0062, 0x006B,0x0085, 0x008C, 0x0092, 0x009B|
+|`orientation=`         |Orientation                                 |0x0000, 0x0009, 0x0023, 0x002A,0x0041, 0x0048, 0x0062, 0x006B,0x0085, 0x008C, 0x0092, 0x009B, 0x00C4, 0x00CD, 0x00D3, 0x00DA, 0x0111, 0x0118, 0x0124, 0x012D, 0x0150, 0x0159, 0x0165, 0x016C|
 |`rateLPF=`             |Rate Sensor Cutoff Frequency                |0,2,5,10,25,40,50|
 |`accelLPF=`            |Accel Sensor Cutoff Frequency               |0,2,5,10,25,40,50|
 |`resetAlgo=`           |Reset Algorithm                             |1|
