@@ -2,12 +2,14 @@
 // TODO (06/10/2020):
 // 1. Support for hex and decimal both for parameter values
 // 2. Set Bank of PS number configuration not supported
-// 4. findDataPacket() should be improved to O(1) from O(n).
+// 4. findExtendedDataPacket() should be improved to O(1) from O(n).
 //      There is a significant overhead as it gets called at 200hz
 // 5. Units for each IMUFrame needs to be verified atleast once
 // 6. Add const keyword as much as possible
 // 7. Restructoring (Open to extension close to modification)
 
+
+//#define STD_ID
 
 #define VALID_PACKET_RATES    9
 #define VALID_PACKET_TYPES    16
@@ -116,7 +118,7 @@ void OpenIMU300::getPacketIdentifiers(uint32_t message_id, uint8_t *pf, uint8_t 
 
 //----------------------------------------------------------------------------//
 
-imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
+imuMessages OpenIMU300::findExtendedDataPacket(uint8_t pf, uint8_t ps)
 {
   for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
   {
@@ -129,6 +131,20 @@ imuMessages OpenIMU300::findDataPacket(uint8_t pf, uint8_t ps)
     }
   }
   return MAX_PGN;
+}
+
+imuMessages OpenIMU300::findStandardDataPacket(uint32_t message_id)
+{
+	switch (message_id) {
+		case 0x5A:
+			return ANGULAR_RATE_PT;
+		case 0x5B:
+			return ACCEL_PT;
+		case 0x5C:
+			return MAGNETOMETER_PT;
+		default:
+			return MAX_PGN;
+	}
 }
 
 //----------------------------------------------------------------------------//
@@ -341,11 +357,13 @@ OpenIMU300::~OpenIMU300()
 
 bool OpenIMU300::init(string paramsString, dwCANMessage **messages, uint8_t *count)
 {
+#ifndef STD_ID
   bool status = getParams(paramsString, messages, count);
-
   //printPSList();
-
   return status;
+#else
+  return true;
+#endif
 }
 
 //----------------------------------------------------------------------------//
@@ -371,23 +389,30 @@ void OpenIMU300::getSensorResetMessage(dwCANMessage *packet)
 
 bool OpenIMU300::isValidMessage(uint32_t message_id)
 {
-  if((message_id & 0x000000FF) != 0x00000080)
-  {
-    return false;
-  }
+#ifdef STD_ID
+	if(message_id == 0x5B || message_id == 0x5C || message_id == 0x5A){
+		return true;
+	}
+	return false;
+#else
+	if((message_id & 0x000000FF) != 0x00000080)
+	{
+		return false;
+	}
 
-  uint8_t pf = 0, ps = 0;
+	uint8_t pf = 0, ps = 0;
 
-  getPacketIdentifiers(message_id, &pf, &ps);
+	getPacketIdentifiers(message_id, &pf, &ps);
 
-  for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
-  {
-    if(pf == IMU300pgnList[i].PF && ps == IMU300pgnList[i].PS)
-    {
-      return true;
-    }
-  }
-  return false;
+	for(size_t i = 0; i < sizeof(IMU300pgnList)/sizeof(IMU300pgnList[0]); i++)
+	{
+		if(pf == IMU300pgnList[i].PF && ps == IMU300pgnList[i].PS)
+		{
+			return true;
+		}
+	}
+	return false;
+ #endif	//STD_ID
 }
 
 //----------------------------------------------------------------------------//
@@ -506,13 +531,16 @@ void OpenIMU300::getConfigPacket(IMUPARAM_t param, uint16_t paramVal, dwCANMessa
 
 bool OpenIMU300::parseDataPacket(dwCANMessage packet, dwIMUFrame *frame)
 {
+#ifdef STD_ID
+  imuMessages dataPacketType = findStandardDataPacket(packet.id);
+#else
   uint8_t pf = 0, ps = 0;
 
   getPacketIdentifiers(packet.id, &pf, &ps);
 
   // TODO: Needs improvement, change from O(n) to O(1)
-  imuMessages dataPacketType = findDataPacket(pf, ps);
-
+  imuMessages dataPacketType = findExtendedDataPacket(pf, ps);
+#endif // STD_ID
   switch(dataPacketType)
   {
     case ANGULAR_RATE_PT:

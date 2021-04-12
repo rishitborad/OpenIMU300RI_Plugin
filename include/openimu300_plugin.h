@@ -135,7 +135,9 @@ class OpenIMU300 : public IMU
     virtual void getSensorResetMessage(dwCANMessage *packet) override;
 
   private:
-    imuMessages findDataPacket(uint8_t pf, uint8_t ps);
+    imuMessages findExtendedDataPacket(uint8_t pf, uint8_t ps);
+
+	imuMessages findStandardDataPacket(uint32_t message_id);
 
     void getBankOfPSPacket(uint8_t bank, uint8_t *reg, dwCANMessage *packet);
 
