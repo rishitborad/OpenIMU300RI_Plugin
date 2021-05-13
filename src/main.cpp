@@ -206,7 +206,7 @@ public:
         }
 
         while (dwSensorCAN_readMessage(result, timeout_us, (m_canSensor)) == DW_SUCCESS)
-        {printf("Reading from CAN\r\n");
+        {
           if(imu->isValidMessage(result->id))
           {
             break;
@@ -226,7 +226,6 @@ public:
         }
 
         bool ok = m_slot.put(const_cast<dwCANMessage*>(reinterpret_cast<const dwCANMessage*>(data)));
-		printf("Returning Raaw\r\n");
 		if (!ok)
         {
             std::cerr << "returnRawData: IMUPlugin return raw data, invalid data pointer" << std::endl;

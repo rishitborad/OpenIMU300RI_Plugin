@@ -28,6 +28,7 @@ typedef enum{
   ANGULAR_RATE_PT     = 14,
   ACCEL_PT            = 15,
   MAGNETOMETER_PT     = 16,
+  //ADDRESS_CLAIM_PT    = 17,
   // Add New Messages here
   MAX_PGN,
 }imuMessages;
